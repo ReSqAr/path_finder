@@ -14,10 +14,11 @@ class HalfPlane:
 		"""
 		self.x0 = x0
 		self.normal = normal
+		self.x0_times_normal = self.x0 * self.normal
 
 	def contains(self, x):
 		""" does the half plane contain the point x? """
-		scalar_product = (x - self.x0) * self.normal
+		scalar_product = x * self.normal - self.x0_times_normal
 		return scalar_product >= 0
 
 

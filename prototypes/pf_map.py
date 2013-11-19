@@ -107,15 +107,25 @@ class Map:
 			# the original lines are fine
 			return []
 		
+		# the triangle is the intersection of the three half planes
+		triangle = [
+						pf_halfplane.HalfPlane(base,v_start_normal),
+						pf_halfplane.HalfPlane(base,v_end_normal),
+						pf_halfplane.HalfPlane(start,v_far_edge_normal),
+					]
+						
 		def tile_intersects_triangle(tile):
 			# tile polygon
 			polygon = tile.polygon()
 			# intersections
-			polygon = pf_halfplane.HalfPlane(base,v_start_normal).intersection(polygon)
-			polygon = pf_halfplane.HalfPlane(base,v_end_normal).intersection(polygon)
-			polygon = pf_halfplane.HalfPlane(start,v_far_edge_normal).intersection(polygon)
-			# we want a proper intersection, not just a line
-			return polygon.node_count() > 2
+			for halfplane in triangle:
+				polygon = halfplane.intersection(polygon)
+				# we want a proper intersection, not just a line
+				if polygon.node_count() <= 2:
+					return False
+			# if end up here, then the polygon has a non-trivial
+			# intersection with the triangle
+			return True
 		
 		# find all tiles intersecting the triangle
 		open_tiles = []
