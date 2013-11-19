@@ -171,3 +171,89 @@ class InfluenceMap(pf_map.Map):
 		
 		# return loops
 		return loops
+
+	def nearest_area_grid_point_in_sector(self, base, path_a, path_b):
+		"""
+			Find the nearest (grid) point to the (grid) point base which lies
+			between the GridPaths path_a and path_b. The sector is spanned clock-wise from
+			path_a to path_b.
+			
+			Careful: the left/right means here left or right from the path as seen from
+					the point base, i.e. the left end of the sector is path_a hence we
+					include everything right of path_a
+			
+			TODO: code seems to be unstable
+		"""
+		assert(isinstance(base,pf_vector.GridPoint))
+		assert(isinstance(path_a,pf_vector.GridPath))
+		assert(isinstance(path_b,pf_vector.GridPath))
+		
+		# compute the tile to the right of path_a[0]->path_a[1]
+		tile_right = pf_vector.GridEdge(path_a.points[0],path_a.points[1]).right_tile()
+		# determine the area id of the right tile
+		area_id = self[tile_right]
+
+		# determine points which are off limit, i.e. left of path_a and right of path_b
+		# again, the perspective we take is from the point base
+
+		off_limit_points_a = set()
+		for p1,p0 in zip(path_a.points[1:],path_a.points[:-1]):
+			# compute the tile to the left of p0->p1
+			tile_left = pf_vector.GridEdge(p0,p1).left_tile()
+			# the points left to path_a are off limit
+			off_limit_points_a |= set( tile_left.adjacent_points() )
+		# the points on the line are fine
+		for p in path_a.points:
+			off_limit_points_a.discard(p)
+
+		off_limit_points_b = set()
+		for p1,p0 in zip(path_b.points[1:],path_b.points[:-1]):
+			# compute the tile to the right of p0->p1
+			tile_right = pf_vector.GridEdge(p0,p1).right_tile()
+			# the points right to path_b are off limit
+			off_limit_points_b |= set( tile_right.adjacent_points() )
+		# the points on the line are fine
+		for p in path_b.points:
+			off_limit_points_b.discard(p)
+		
+		# then collect the off limit points. we have to compute it seperately
+		# to avoid masking problems
+		off_limit_points = off_limit_points_a | off_limit_points_b
+		
+		# initialise open points, i.e. points which have still to propagate
+		open_points = [base]
+		# intialise set of all seen points
+		seen_points = set(open_points)
+		
+		while open_points:
+			# get a new point (breadth search)
+			point = open_points.pop(0)			
+			# check area_id
+			point_area_id = self.area_map.get_point_area_id(point)
+
+			# if the point has the right area_id, then we use it
+			if point_area_id == area_id:
+				# this is only an approximation to the closest point,
+				# but this should be enough
+				return point
+
+			# if the point has an area_id, but the wrong one
+			if point_area_id != self.area_map.no_area_id and point_area_id != area_id:
+				# then skip it except it is one of the early nodes
+				# (there is no harm as this is (almost) entirely an optimisation)
+				if len(seen_points) > 6:
+					continue
+				
+			# propagate (along x-/y-axis, not the diagonal)
+			for new_point in point.directly_adjacent_points():
+				# if the point is forbidden, leave it
+				if new_point in off_limit_points:
+					continue
+				
+				# propagate the point further (if it is indeed new)
+				if new_point not in seen_points:
+					open_points.append( new_point )
+					seen_points.add( new_point )
+		
+		print(base)
+		return pf_vector.GridPoint(-20,10)

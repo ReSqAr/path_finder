@@ -45,8 +45,6 @@ class MainWindow(QtGui.QMainWindow):
 		#self.draw_influence_map(colors)
 		
 		self.draw_graph()
-		#self.draw_gates()
-		#self.draw_optimised_edges()
 		
 		
 		# maximise
@@ -64,6 +62,17 @@ class MainWindow(QtGui.QMainWindow):
 		self.graphicsView.setScene(self.scene)
 
 		#self.tabs.tabCloseRequested.connect(self.tabs.removeTab)
+
+	# convience method
+	def draw_path(self, path, pen):
+		for p1,p0 in zip(path.points[1:],path.points[:-1]):
+			self.scene.addLine(p0.x*10,
+								p0.y*10,
+								p1.x*10,
+								p1.y*10,
+								pen)
+	
+
 	
 	def draw_bounding_box(self):
 		"""
@@ -132,6 +141,16 @@ class MainWindow(QtGui.QMainWindow):
 		"""
 			draw the graph
 		"""
+		pen = QtGui.QPen()
+		pen.setWidth(2)
+		pen.setColor(QtGui.QColor("orange"))
+		gate_pen = QtGui.QPen()
+		gate_pen.setWidth(2)
+		gate_pen.setColor(QtGui.QColor("green"))
+		opt_pen = QtGui.QPen()
+		opt_pen.setWidth(2)
+		opt_pen.setColor(QtGui.QColor("orchid"))
+
 		for node in self.preprocessed.graph.nodes:
 			#print(node)
 			#for edge in node.edges:
@@ -141,71 +160,24 @@ class MainWindow(QtGui.QMainWindow):
 			                      QtGui.QPen(),
 			                      QtGui.QBrush(QtCore.Qt.red))
 		
-		#for x,y in self.graph_helper_nodes:
-		#	self.scene.addEllipse(x*10-4,y*10-4,8,8,
-		#	                      QtGui.QPen(),
-		#	                      QtGui.QBrush(QtCore.Qt.green))
-		
-		pen = QtGui.QPen()
-		pen.setWidth(2)
-		pen.setColor(QtGui.QColor("orange"))
+			if node.gates:
+				for gate in node.gates:
+					self.scene.addEllipse(gate.x*10-4,gate.y*10-4,8,8,
+										QtGui.QPen(),
+										QtGui.QBrush(QtCore.Qt.magenta))
 
+					self.scene.addLine(x*10,
+										y*10,
+										gate.x*10,
+										gate.y*10,
+										gate_pen)
+		
 		for edge in self.preprocessed.graph.edges:
-			for p1,p0 in zip(edge.path.points[1:],edge.path.points[:-1]):
-				self.scene.addLine(p0.x*10,
-									p0.y*10,
-									p1.x*10,
-									p1.y*10,
-									pen)
-	
-	def draw_gates(self):
-		""" draw the gates and connect them to node """
-		raise NotImplementedError
+			self.draw_path( edge.path, pen )
+			
+			if edge.opt_path:
+				self.draw_path( edge.opt_path, opt_pen )
 
-		for node, node_gates in self.gates.items():
-			for x,y in node_gates :
-				self.scene.addEllipse(x*10-4,y*10-4,8,8,
-									QtGui.QPen(),
-									QtGui.QBrush(QtCore.Qt.magenta))
-
-				pen = QtGui.QPen()
-				pen.setWidth(2)
-				pen.setColor(QtGui.QColor("green"))
-
-				self.scene.addLine(x*10,
-									y*10,
-									node[0]*10,
-									node[1]*10,
-									pen)
-		
-		# DEBUG
-		#for x,y in path_finding_algo.global_save[0]:
-			#self.scene.addEllipse(x*10-5,y*10-5,10,10,
-								#QtGui.QPen(),
-								#QtGui.QBrush(QtCore.Qt.black))
-		#for x,y in path_finding_algo.global_closed_points:
-			#self.scene.addEllipse(x*10-2,y*10-2,4,4,
-								#QtGui.QPen(),
-								#QtGui.QBrush(QtCore.Qt.green))
-		
-	def draw_optimised_edges(self):
-		"""
-			draw the graph
-		"""
-		raise NotImplementedError
-
-		pen = QtGui.QPen()
-		pen.setWidth(2)
-		pen.setColor(QtGui.QColor("orchid"))
-
-		for path in self.optimised_edges.values():
-			for p1,p0 in zip(path[1:],path[:-1]):
-				self.scene.addLine(p0[0]*10,
-									p0[1]*10,
-									p1[0]*10,
-									p1[1]*10,
-									pen)
-	
 	def resizeEvent(self, *args, **kwargs):
 		self.graphicsView.fitInView(self.scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio)
 		

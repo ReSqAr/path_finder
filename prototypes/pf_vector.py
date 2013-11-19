@@ -10,6 +10,10 @@ class Vector:
 		self.x = x
 		self.y = y
 	
+	def __neg__(self):
+		""" return -self """
+		return Vector(-self.x, -self.y)
+	
 	def __add__(self, other):
 		""" return self + other """
 		return Vector(self.x + other.x,self.y + other.y)
@@ -101,7 +105,21 @@ class GridPoint(PointTemplate):
 		          GridTile(self.x-dx,self.y-dy)
 		          for dx,dy in ( (0,0),(0,1),(1,1),(1,0) )
 		       ]
-	
+
+	def adjacent_points(self):
+		""" all nearby points (including the diagonal) """
+		return [
+		          GridPoint(self.x+dx,self.y+dy)
+		          for dx,dy in ( (1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1),(0,1) )
+		       ]
+
+	def directly_adjacent_points(self):
+		""" all nearby points (excluding the diagonal) """
+		return [
+		          GridPoint(self.x+dx,self.y+dy)
+		          for dx,dy in ( (1,0),(0,-1),(-1,0),(0,1) )
+		       ]
+
 	def toPointF(self):
 		return PointF(self.x,self.y)
 	
@@ -125,7 +143,7 @@ class GridTile(Vector):
 		""" compute the points which are adjacent to the tile """
 		# these are the points with x/y coordinate which is +0 or +1
 		return [
-		          GridPoints(self.x+dx,self.y+dy)
+		          GridPoint(self.x+dx,self.y+dy)
 		          for dx,dy in ( (0,0),(0,1),(1,1),(1,0) )
 		       ]
 
@@ -275,17 +293,17 @@ class PathTemplate:
 		C++: template class with variable type T, i.e still has open
 		     (for the PointTemplate type)
 	"""
-	def __init__(self, points):
+	def __init__(self, points=None):
 		# points is a list of points
-		self.points = points
+		self.points = points if points else []
 	
-	def length(self):
+	def node_count(self):
 		""" length of the points """
 		return len(self.points)
 	
 	def empty(self):
-		""" is the points empty? """
-		return bool(self.points)
+		""" is the points list empty? """
+		return self.node_count() == 0
 	
 	def start(self):
 		""" get the start point of the points """
@@ -299,14 +317,33 @@ class PathTemplate:
 		""" does the path contain the point? """
 		return point in self.points
 	
-	def pop(self):
+	def pop_first(self):
 		""" remove the first element of the points and return it """
-		return self.points.pop()
+		return self.points.pop(0)
 
 	def append(self, p):
+		""" append p to the end """
+		return self.points.append( p )
+
+	def prepend(self, p):
+		""" prepend p to the start """
+		return self.points.insert( 0, p )
+
+	def get_path_extended_by(self, p):
 		""" create a new list with the point added to the end """
 		return self.__class__( self.points + [p] )
-
+	
+	def reversed(self):
+		""" returns a copy of the path which is reversed """
+		return self.__class__( list(reversed(self.points)) )
+	
+	def length(self):
+		""" returns the length of the path """
+		return sum(
+	                (self.points[i+1] - self.points[i]).length()
+		            for i in range(self.node_count()-1)
+		          )
+	
 	def __eq__(self, other):
 		""" equality of paths means equality disregarding the direction """
 		return tuple(self.points) == tuple(other.points)\
@@ -329,7 +366,7 @@ class GridPath(PathTemplate):
 		C++: derives from PathTemplate<GridPoint>
 	"""
 	def toPathF(self):
-		return PathF([p.toPointF() for p in self.path])
+		return PathF([p.toPointF() for p in self.points])
 
 
 class PathF(PathTemplate):

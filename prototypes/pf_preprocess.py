@@ -19,4 +19,4 @@ class PreprocessedPathFindingData:
 		# create the influence map
 		self.influence_map = pf_influence_map.InfluenceMap(self.area_map)
 		# create the graph
-		self.graph = pf_graph.Graph(self.influence_map)
+		self.graph = pf_graph.Graph(self.area_map, self.influence_map)

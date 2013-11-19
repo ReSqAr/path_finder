@@ -2,7 +2,7 @@ import collections
 
 import pf_vector
 import pf_map
-
+import pf_halfplane
 
 class AreaMap(pf_map.Map):
 	"""
@@ -43,7 +43,7 @@ class AreaMap(pf_map.Map):
 		for x in range(width):
 			# y = 0 line
 			t = pf_vector.GridTile(x,0)
-			self._treat_tile(area_id, t)
+			self.__treat_tile(area_id, t)
 			
 			if self.pass_test( self.raw_map[t] ):
 				p     = pf_vector.GridPoint(x,  0)
@@ -53,7 +53,7 @@ class AreaMap(pf_map.Map):
 			
 			# y = max line
 			t = pf_vector.GridTile(x,height-1)
-			self._treat_tile(area_id, t)
+			self.__treat_tile(area_id, t)
 			
 			if self.pass_test( self.raw_map[t] ):
 				p     = pf_vector.GridPoint(x,  height)
@@ -64,7 +64,7 @@ class AreaMap(pf_map.Map):
 		for y in range(height):
 			# x = 0 line
 			t = pf_vector.GridTile(0,y)
-			self._treat_tile(area_id, t)
+			self.__treat_tile(area_id, t)
 			
 			if self.pass_test( self.raw_map[t] ):
 				p     = pf_vector.GridPoint(0, y, )
@@ -74,7 +74,7 @@ class AreaMap(pf_map.Map):
 			
 			# x = max line
 			t = pf_vector.GridTile(width-1,y)
-			self._treat_tile(area_id, t)
+			self.__treat_tile(area_id, t)
 			
 			if self.pass_test( self.raw_map[t] ):
 				p     = pf_vector.GridPoint(width, y, )
@@ -87,11 +87,11 @@ class AreaMap(pf_map.Map):
 		
 		# iterate over all data
 		for t in self.raw_map.tiles_iterator():
-			if self._treat_tile(area_id, t):
+			if self.__treat_tile(area_id, t):
 				# if we found something, increment area_id
 				area_id += 1
 		
-	def _treat_tile(self, area_id, t):
+	def __treat_tile(self, area_id, t):
 		# if the tile is unpassable and we did not know that before, treat it,
 		# otherwise skip it
 		if self.pass_test( self.raw_map[t] ) or self[t] != self.no_area_id:
@@ -146,3 +146,168 @@ class AreaMap(pf_map.Map):
 
 		# we found something
 		return True
+
+	def get_point_area_id(self, point):
+		""" get the area_id which belongs to a point """
+
+		# this is the area_id of an adjacent tile
+		for tile in point.adjacent_tiles():
+			# if it is a usual tile, treat it like that
+			if self.contains(tile):
+				if self[tile] != self.no_area_id:
+					return self[tile]
+			else:
+				# if a wall was found, use the wall id
+				return self.no_area_id + 1
+		else:
+			# nothing was found
+			return self.no_area_id
+
+	def find_obstruction_when_transforming_line(self, base, start, end):
+		"""
+			is there any obstruction to transforming base->start to base->end?
+			
+			or, to put it differently, find the biggest t such that the triangle
+				base->start->start+t*(end-start)
+			intersects no unpassable tiles.
+			
+			tests:
+				raw_map = pf_map.Map(10,10,100*[0])
+				area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
+				
+				area_map[pf_vector.GridTile(4,4)] = 0 # 4,4 is now unpassable
+				
+				base = pf_vector.PointF(2,2)
+				start = pf_vector.PointF(8,2)
+				end = pf_vector.PointF(8,2)
+				
+				area_map.find_obstruction_when_transforming_line(base, start, end)
+				Out: (1.0, None)
+				
+				area_map.find_obstruction_when_transforming_line(base, start, end)
+				Out: (0.4, GridTile(5, 4))
+				
+				area_map[pf_vector.GridTile(6,3)] = 0 # 6,3 is now unpassable
+				area_map.find_obstruction_when_transforming_line(base, start, end)
+				Out: (0.16666666666666666, GridPoint(7, 3))
+				
+				area_map[pf_vector.GridTile(4,2)] = 0 # 4,2 is now unpassable
+				area_map.find_obstruction_when_transforming_line(base, start, end)
+				Out: (0.0, GridPoint(5, 2))
+
+				area_map[pf_vector.GridTile(2,2)] = 0 # 2,2 is now unpassable
+				area_map.find_obstruction_when_transforming_line(base, start, end)
+				Out: (0.0, GridPoint(5, 2))
+		"""
+
+		# find all tiles
+		tiles = self.find_tiles_in_triangle(base, start, end)
+		
+		# now, all tiles intersecting the triangle are in all_tiles
+		# find the ones which are obstructions
+		obstruction_tiles = [tile for tile in tiles if self[tile] != self.no_area_id]
+		if not obstruction_tiles:
+			# we have found no obstructions tiles
+			return 1.,None
+		
+		# otherwise, find the point which is the obstruction, i.e.
+		# has the smallest angle between base->point and base->start
+		# if two points have the same angle, use the one which is
+		# further away from base
+		
+		# find all points adjacent to tiles
+		obstruction_points = []
+		for tile in obstruction_tiles:
+			# compute the points which are adjacent to the obstruction tile
+			obstruction_points.extend( tile.adjacent_points() )
+
+		# if base is one of the obstruction points, ignore it
+		if base in obstruction_points:
+			obstruction_points.remove(base)
+			
+		# compute v_start
+		v_start = start - base
+		v_start_length = v_start.length()
+		def key(point):
+			# compute v_point
+			v_point = point - base
+			
+			# compute the angle between base->point and base->start
+			# smaller angle is better (i.e. larger cos)
+			cos_angle = v_point*v_start / (v_start_length*v_point.length())
+
+			# further away is better
+			dist_to_base = v_point.length_squared()
+			
+			return -cos_angle,-dist_to_base
+		
+		obstructing_point = min(obstruction_points, key=key)
+		
+		# compute t value
+		
+		# t value now is the intersection of the start->end line with the
+		# halfplane which is defined by base->point
+		v_obstruction_normal = (obstructing_point.toPointF() - base).left()
+		halfplane = pf_halfplane.HalfPlane(base, v_obstruction_normal)
+		t = halfplane.find_t(start, end)
+
+		return t, obstructing_point
+
+	def optimise_path(self, path, max_iterations=1000):
+		"""
+			find the shortest way between path.start() and path.end()
+			taking path as the starting point
+		"""
+		print("optimising path...")
+
+		# original path
+		original_path = path
+
+		for iteration in range(max_iterations):
+			path_changed = False
+			
+			# start new path with the starting point of the path, truncate old_path
+			path,old_path = pf_vector.PathF(path.points[0:1]),pf_vector.PathF(path.points[1:])
+			
+			while not old_path.empty():
+				# take the last point of the new path
+				base = path.end()
+				
+				while old_path.node_count() >= 2:
+					p0 = old_path.pop_first()
+					p1 = old_path.start()
+					t,obs = self.find_obstruction_when_transforming_line(base,p0,p1)
+					obs = obs.toPointF() if obs is not None else None
+					
+					if obs is None:
+						# p1 is superflous, ignore it
+						path_changed = True
+						continue
+					elif obs == p0:
+						# p0 is necessary
+						path.append( p0 )
+						break
+					elif obs is not None:
+						# replace
+						#   base|->...->p0->p1
+						# by
+						#   base->obs|->pt->p1
+						# with pt = p0+t*(p1-p0)
+						path.append( obs )
+						pt = p0 + (p1-p0).scaled(t)
+						pt = pf_vector.PointF(pt.x,pt.y)
+						if obs != pt:
+							old_path.prepend(pt)
+						path_changed = True
+						break
+				else:
+					# there is only one element left, the end point which we may not change
+					path.append(old_path.pop_first())
+			
+			# do it until the path does not change anymore
+			if not path_changed:
+				break
+				
+		print("done: %s -> %s" % (original_path.length(), path.length()) )
+		
+		return path

@@ -2,7 +2,6 @@ import sys
 
 import pf_vector
 
-
 class HalfPlane:
 	"""
 		This object represents a half plane.
@@ -15,6 +14,12 @@ class HalfPlane:
 		"""
 		self.x0 = x0
 		self.normal = normal
+
+	def contains(self, x):
+		""" does the half plane contain the point x? """
+		scalar_product = (x - self.x0) * self.normal
+		return scalar_product >= 0
+
 
 	def find_t(self, a, b):
 		"""
@@ -37,25 +42,25 @@ class HalfPlane:
 		else:
 			return -c_times_normal / v_times_normal
 
-	def halfplane_polygon_intersection(polygon):
+	def intersection(self, polygon):
 		"""
 			intersects a convex polygon with a halfplane
 		"""
 
 		# save the result for the halfplane_test for every point
-		halfplane_status = [self.halfplane_test(p) for p in polygon.points]
+		halfplane_status = [self.contains(p) for p in polygon.points]
 		
 		# create intersection polygon
-		intersection_polygon = pf_vector.Polygon
+		intersection_polygon = pf_vector.Polygon()
 		
-		for i in range(len(polygon.points)):
+		for i in range(polygon.node_count()):
 			if halfplane_status[i]:
 				# add to the polygon if it is contained in the halfpane
 				intersection_polygon.append( polygon.points[i] )
 			
 			# if the edge to the next point intersects the halfplane boundary,
 			# i.e. add the intersection point to the polygon 
-			ipp = (i+1) % len(polygon)
+			ipp = (i+1) % polygon.node_count()
 			if halfplane_status[i] != halfplane_status[ipp]:
 				# find the next best point on this edge which is in the intersection
 				p_ipp,p_i = polygon.points[ipp],polygon.points[i]
