@@ -64,15 +64,22 @@ class MainWindow(QtGui.QMainWindow):
 		#self.tabs.tabCloseRequested.connect(self.tabs.removeTab)
 
 	# convience method
-	def draw_path(self, path, pen):
+	def draw_path(self, path, pen, draw_nodes=False):
+		
 		for p1,p0 in zip(path.points[1:],path.points[:-1]):
 			self.scene.addLine(p0.x*10,
 								p0.y*10,
 								p1.x*10,
 								p1.y*10,
 								pen)
-	
 
+		if draw_nodes:
+			for p in path.points:
+				self.scene.addRect(p.x*10-2, p.y*10-2, 4, 4,
+									QtGui.QPen(),
+									QtGui.QBrush("blue"))
+		
+	
 	
 	def draw_bounding_box(self):
 		"""
@@ -176,7 +183,7 @@ class MainWindow(QtGui.QMainWindow):
 			self.draw_path( edge.path, pen )
 			
 			if edge.opt_path:
-				self.draw_path( edge.opt_path, opt_pen )
+				self.draw_path( edge.opt_path, opt_pen, draw_nodes=True )
 
 	def resizeEvent(self, *args, **kwargs):
 		self.graphicsView.fitInView(self.scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio)

@@ -88,7 +88,7 @@ class PointTemplate(Vector):
 		
 		C++: derives from Vector<T>, still has an open type
 	"""
-	
+	pass
 
 class GridPoint(PointTemplate):
 	"""
@@ -121,7 +121,7 @@ class GridPoint(PointTemplate):
 		       ]
 
 	def toPointF(self):
-		return PointF(self.x,self.y)
+		return PointF(float(self.x),float(self.y))
 	
 
 class PointF(PointTemplate):
@@ -131,7 +131,6 @@ class PointF(PointTemplate):
 		C++: derives from PointTemplate<float>
 	"""
 	pass
-
 
 class GridTile(Vector):
 	"""

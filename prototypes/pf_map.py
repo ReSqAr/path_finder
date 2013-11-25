@@ -90,7 +90,7 @@ class Map:
 		v_far_edge_left = v_far_edge.left()
 		
 		# find inner direction
-		leftness = v_start_left*v_end
+		leftness = v_start_left * v_end
 		
 		if leftness > 0:
 			# inner direction is to the left of v_start, i.e. to the right of v_end

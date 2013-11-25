@@ -169,7 +169,8 @@ class AreaMap(pf_map.Map):
 			
 			or, to put it differently, find the biggest t such that the triangle
 				base->start->start+t*(end-start)
-			intersects no unpassable tiles.
+			intersects no unpassable tiles. Assuming that there is no obstruction
+			lies on the lines base->start and start->end.
 			
 			tests:
 				raw_map = pf_map.Map(10,10,100*[0])
@@ -227,19 +228,42 @@ class AreaMap(pf_map.Map):
 			
 		# compute v_start
 		v_start = start - base
-		v_start_length = v_start.length()
+		v_start_normal = v_start.left()
+		v_start_normal_length = v_start_normal.length()
 		def key(point):
 			# compute v_point
 			v_point = point - base
 			
 			# compute the angle between base->point and base->start
-			# smaller angle is better (i.e. larger cos)
-			cos_angle = v_point*v_start / (v_start_length*v_point.length())
+			# smaller angle is better
+			# by computing the angle between base->point and the normal
+			# of base->start, i.e. the sin of the angle. because we do not
+			# care about the orientation, we take absolute value of the sine.
+			sin_angle = v_point*v_start_normal / (v_start_normal_length*v_point.length())
+			sin_angle = abs(sin_angle)
+			
+			# caveat of the method: does not distinguish 90°-angle and 90°+angle
+			# almost compute cos alpha as we are only interested in the sign of
+			# cos alpha
+			sign_cos_alpha = v_point*v_start
+			
+			# if angle > 90°, i.e. cos alpha < 0, say that
+			# 'sin angle' := 2 - sin angle
+			# rational: 'sin angle' has the same ordering relation as
+			#           angle for 0° to 180°
+			if sign_cos_alpha < 0:
+				sin_angle = 2. - sin_angle
+			
+			# why not to use cos angle directly:
+			# - prone to rounding errors
+			# - 10000x10000 grid, smallest sin approx 1/10000,
+			#   hence biggest cos != 1 is approx (1 - 1/10000**2)**0.5 which
+			#   is approx 1 - 5e-9, i.e. very sensitive
 
 			# further away is better
 			dist_to_base = v_point.length_squared()
 			
-			return -cos_angle,-dist_to_base
+			return sin_angle,-dist_to_base
 		
 		obstructing_point = min(obstruction_points, key=key)
 		
@@ -253,12 +277,12 @@ class AreaMap(pf_map.Map):
 
 		return t, obstructing_point
 
-	def optimise_path(self, path, max_iterations=1000):
+	def optimise_path(self, path, max_iterations=20):
 		"""
 			find the shortest way between path.start() and path.end()
 			taking path as the starting point
 		"""
-		print("optimising path...")
+		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
 
 		# original path
 		original_path = path
@@ -280,7 +304,7 @@ class AreaMap(pf_map.Map):
 					obs = obs.toPointF() if obs is not None else None
 					
 					if obs is None:
-						# p1 is superflous, ignore it
+						# p0 is superflous, ignore it
 						path_changed = True
 						continue
 					elif obs == p0:
@@ -303,11 +327,15 @@ class AreaMap(pf_map.Map):
 				else:
 					# there is only one element left, the end point which we may not change
 					path.append(old_path.pop_first())
+
+			print("new path: length: %s, nodes: %d" % (path.length(),path.node_count()))
 			
 			# do it until the path does not change anymore
 			if not path_changed:
 				break
-				
-		print("done: %s -> %s" % (original_path.length(), path.length()) )
+		else:
+			raise RuntimeError("Needed way too many iterations.")
+		
+		print("done")
 		
 		return path
