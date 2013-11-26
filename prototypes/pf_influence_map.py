@@ -43,13 +43,15 @@ class InfluenceMap(pf_map.Map):
 					
 					# go through edges of loop and see if we can expand it
 					# (use index based iterator as the list is going to change)
-					i = 0 # edge in dex
-					while i < len(loop):
+					# (if the loop consists only of two edges, stop)
+					i = 0 # edge index
+					while i < len(loop) and 2 < len(loop):
 						# get edge and compute outer tile, i.e. the tile to the left
 						edge = loop[i]
 						tile_outer = edge.left_tile()
 						
-						# skip the edge if the tile does not define a valid tile
+						# skip the edge if the tile does not define a valid tile,
+						# i.e. the tile does not belong to the grid
 						if not self.contains(tile_outer):
 							i += 1
 							continue
@@ -62,6 +64,9 @@ class InfluenceMap(pf_map.Map):
 						# set expanded to true as we are going to expand the current edge
 						expanded = True
 						
+						# mark the new area
+						self[tile_outer] = area_id
+						
 						# get left facing vector
 						v_left = edge.direction().left()
 
@@ -70,55 +75,110 @@ class InfluenceMap(pf_map.Map):
 						new_a = pf_vector.GridPoint(new_a.x,new_a.y)
 						new_b = pf_vector.GridPoint(new_b.x,new_b.y)
 						
-						new_edges = []
-						# connect old a to new a
-						new_edges.append( pf_vector.GridEdge(edge.a,new_a) )
-						# connect new a to new b
-						new_edges.append( pf_vector.GridEdge(new_a,new_b) )
-						# connect new b to old b
-						new_edges.append( pf_vector.GridEdge(new_b,edge.b) )
+						# i <- i + delta_i
+						delta_i = +1
 						
-						# replace it and mark the new area
-						loop[i:i+1] = new_edges
-						self[tile_outer] = area_id
-						# care about i: we inserted something before i
-						i += 1
-						next_i = i+2
+						# the configuration looks like that:
+						# new_a----new_b
+						#     |    |
+						#     |    |
+						# ----a----b-----
+						# i-1   i    i+1
 						
-						# delete unnecessay edges
-						edges = [loop[(i+x) % len(loop)] for x in range(-2*2,2*2+1)]
-						while len(loop) > 2 and edges:
-							for e1,e2 in zip(edges[:-1],edges[1:]):
-								# it always holds that e1.b == e2.a
-								if e1.b != e2.a:
-									print(area_id, loop_id)
-									print(len(loop))
-									print(loop)
-									
-								# if also holds that e1.a == e2.b, then the
-								# edge is superflous and can be removed
-								if e1.a == e2.b:
-									# remove the edges from the edges list
-									edges.remove(e1)
-									edges.remove(e2)
-									# remove e1 from the loop list and care about i
-									index_e1 = loop.index(e1)
-									del loop[index_e1]
-									if index_e1 < next_i:
-										next_i -= 1
-									# remove e2 from the loop list and care about i
-									index_e2 = loop.index(e2)
-									del loop[index_e2]
-									if index_e2 < next_i:
-										next_i -= 1
-									# restart the process
-									break
-							else:
-								# we have done nothing, so we are finished
-								break
-								
+						# if the (i-1)-th edge is the inverse of a->new_a,
+						# then delete the (i-1)-th edge, otherwise add
+						# the new edge
+						
+						# compute i-1
+						imm = (i-1) % len(loop)
+						# it always holds that edge[imm].b == edge.a
+						assert(loop[imm].b == edge.a)
+						if loop[imm].a == new_a:
+							# delete the edge
+							del loop[imm]
+							# care about i
+							if imm < i:
+								i -= 1
+						else:
+							# connect old_a to new_a
+							new_edge = pf_vector.GridEdge(edge.a,new_a)
+							# add it just before loop[i] == edge
+							loop.insert(i,new_edge)
+							# care about i
+							i += 1
+						
+						assert(loop[i] == edge)
+						
+						# if the (i+1)-th edge is the inverse of new_b->b,
+						# then delete the (i+1)-th edge, otherwise add
+						# the new edge 
+						
+						# compute i+1
+						ipp = (i+1) % len(loop)
+						# it always holds that edge.b == edge[ipp].a
+						assert(edge.b == loop[ipp].a)
+						if new_b == loop[ipp].b:
+							# delete the edge
+							del loop[ipp]
+							# care about i
+							if ipp < i:
+								i -= 1
+						else:
+							# connect new b to old b
+							new_edge = pf_vector.GridEdge(new_b,edge.b)
+							# add it just after loop[i] == edge
+							loop.insert(i+1,new_edge)
+							# care about i
+							delta_i += 1
+
+						assert(loop[i] == edge)
+
+						# new_a -> new_b now may be the inverse of loop[i-1]
+						# or loop[i+1], then just delete the edge, otherwise
+						# add the new edge. careful: prevent the loop from
+						# being trivialised
+						
+						# compute i-1 and i+1
+						imm = (i-1) % len(loop)
+						ipp = (i+1) % len(loop)
+						# it always holds that loop[imm].b == new_a is true
+						assert(loop[imm].b == new_a)
+						# it always holds that new_b == loop[imm].a is true
+						assert(new_b == loop[ipp].a)
+						
+						if loop[imm].a == new_b and len(loop) > 2:
+							# if loop[imm] is inverse to new_a -> new_b, delete it
+							del loop[imm]
+							# care about i
+							if imm < i:
+								i -= 1
+							# delete the original edge
+							assert(loop[i] == edge)
+							del loop[i]
+							# care about i
+							i -= 1
+						elif loop[ipp].b == new_a and len(loop) > 2:
+							# if loop[ipp] is inverse to new_a -> new_b, delete it
+							del loop[ipp]
+							# care about i
+							if ipp < i:
+								i -= 1
+							# delete the original edge
+							assert(loop[i] == edge)
+							del loop[i]
+							# care about i
+							i -= 1
+						else:
+							# connect new_a to new_b
+							new_edge = pf_vector.GridEdge(new_a,new_b)
+							# replace the old edge
+							assert(loop[i] == edge)
+							loop[i] = new_edge
+							# care about i
+							i += 0
+						
 						# advance i
-						i = next_i
+						i += delta_i
 		
 			# we are done if nothing was expanded
 			if not expanded:

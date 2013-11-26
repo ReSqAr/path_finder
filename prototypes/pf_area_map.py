@@ -243,14 +243,14 @@ class AreaMap(pf_map.Map):
 			sin_angle = abs(sin_angle)
 			
 			# caveat of the method: does not distinguish 90°-angle and 90°+angle
-			# almost compute cos alpha as we are only interested in the sign of
-			# cos alpha
+			# almost compute cos alpha as we are only interested in the sign
 			sign_cos_alpha = v_point*v_start
 			
 			# if angle > 90°, i.e. cos alpha < 0, say that
 			# 'sin angle' := 2 - sin angle
 			# rational: 'sin angle' has the same ordering relation as
-			#           angle for 0° to 180°
+			#           angle for 0° to 180°, i.e. angle -> 'sin angle'
+			#           is strictely monotonic in this range
 			if sign_cos_alpha < 0:
 				sin_angle = 2. - sin_angle
 			
