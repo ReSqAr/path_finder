@@ -38,8 +38,15 @@ class InfluenceMap(pf_map.Map):
 			# was a boundary expanded? if not, we are done
 			expanded = False
 			
+			# keep track of finished loops
+			finished_loops = []
+			
 			for area_id,loops in self.boundaries.items():
 				for loop_id in range(len(loops)):
+					# skip if the loop is finished
+					if (area_id,loop_id) in finished_loops:
+						continue
+					
 					# the old loop which we want to expand
 					loop = loops[loop_id]
 					
@@ -51,6 +58,10 @@ class InfluenceMap(pf_map.Map):
 					
 					# keep track of the expanded state
 					expanded |= loop_expanded
+					
+					# keep track of finished loops
+					if loop_expanded:
+						finished_loops.append( (area_id,loop_id) )
 
 			# we are done if nothing was expanded
 			if not expanded:
