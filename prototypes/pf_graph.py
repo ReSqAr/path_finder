@@ -181,6 +181,10 @@ class GraphNode:
 		self.edges.append(edge)
 		self._sort_edges()
 	
+	def get_sorted_edges(self):
+		# TODO: implement
+		pass
+	
 	def _sort_edges(self):
 		"""
 			sort the edges such that they are clock-wise ordered, i.e.
