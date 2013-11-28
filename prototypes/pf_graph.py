@@ -35,25 +35,18 @@ class Graph:
 		# get the associated nodes
 		node_a = self._node_positions[path.start()]
 		node_b = self._node_positions[path.end()]
-		# does the edge already exist, if yes skip the process?
+		# does the edge already exist? if yes skip the process
 		for edge in node_a.edges:
-			if edge.path == path:
+			if edge._path == path:
 				return
 		# create the edge
 		edge = GraphEdge( node_a, node_b, path )
 		# add it the list of edges
 		self.edges.append(edge)
-		# announce the existence of the edge
+		# announce the existence of the edge (only add once per node)
+		node_a._add_edge(edge)
 		if node_a != node_b:
-			# if the nodes are not equal
-			node_a._add_edge(edge)
 			node_b._add_edge(edge)
-		else:
-			# if the nodes are indeed equal, we have to use
-			# this little nasty trick
-			node_a._add_edge(edge)
-			edge_reversed = GraphEdge( node_a, node_a, path.reversed() )
-			node_a._add_edge(edge_reversed)
 	
 	def _create_graph(self):
 		""" create the graph """
@@ -147,16 +140,17 @@ class Graph:
 			GraphEdge.opt_path and GraphEdge.opt_path_length
 		"""
 		for edge in self.edges:
-			path = edge.path.toPathF()
-			edge.opt_path = self.area_map.optimise_path(path)
-			edge.opt_path_length = edge.opt_path.length()
+			path = edge._path.toPathF()
+			opt_path = self.area_map.optimise_path(path)
+			edge.set_optimal_path(opt_path)
 
 	def _find_gates(self):
 		""" find all gates """
 		for node in self.nodes:
-			for i in range(len(node.edges)):
-				edge_a,edge_b = node.edges[i],node.edges[(i+1)%len(node.edges)]
-				path_a,path_b = edge_a.path_from(node),edge_b.path_from(node)
+			d_edges = node.sorted_directional_edges()
+			for i in range(len(d_edges)):
+				edge_a,edge_b = d_edges[i],d_edges[(i+1)%len(d_edges)]
+				path_a,path_b = edge_a.path(),edge_b.path()
 				point = self.influence_map.nearest_area_grid_point_in_sector(node.position, path_a, path_b)
 				node.gates.append(point)
 
@@ -164,10 +158,6 @@ class Graph:
 class GraphNode:
 	"""
 		Represents node in the graph.
-		
-		edges attribute:
-		    careful: as this may contain loops, there could be edges which
-		             are equal but should not be treated as equal
 	"""
 	def __init__(self, position):
 		self.position = position
@@ -179,30 +169,28 @@ class GraphNode:
 	def _add_edge(self, edge):
 		""" add edge to node """
 		self.edges.append(edge)
-		self._sort_edges()
+
+	def directional_edges(self):
+		""" get all the directional edges """
+
+		# list all directional edges
+		directional_edges = []
+		for edge in self.edges:
+			# if node a is self, add a -> b
+			if edge.node_a == self:
+				directional_edges.append(DirectionalGraphEdge(edge,True))
+			# if node b is self, add b -> a
+			# especially, if node a == b, we have added both directions
+			if edge.node_b == self:
+				directional_edges.append(DirectionalGraphEdge(edge,False))
+		
+		return directional_edges
 	
-	def get_sorted_edges(self):
-		# TODO: implement
-		pass
-	
-	def _sort_edges(self):
-		"""
-			sort the edges such that they are clock-wise ordered, i.e.
-			place  diff
-			1th    (1,0)
-			2th    (0,-1)
-			3th    (-1,0)
-			4th    (0,1)
-		"""
-		def f(edge):
-			path = edge.path_from(self)
-			v = path.points[1] - path.points[0]
-			if v.x == 1:    return 1
-			elif v.y == -1: return 2
-			elif v.x == -1: return 3
-			elif v.y == 1:  return 4
-			else: raise RuntimeError
-		self.edges.sort(key=f)
+	def sorted_directional_edges(self):
+		""" get the directional edges in a sorted manner """
+		directional_edges = self.directional_edges()
+		directional_edges.sort(key=lambda e: e._sort_key())
+		return directional_edges
 	
 	def __eq__(self, other):
 		return self.position == other.position
@@ -224,37 +212,85 @@ class GraphEdge:
 		Represents an edge in the graph.
 	"""
 	def __init__(self, node_a, node_b, path):
-		self.node_a = node_a
-		self.node_b = node_b
-		self.path   = path
+		# save the path
+		self._node_a = node_a
+		self._node_b = node_b
+		self._path  = path
 		
 		# slots for results of deferred calculations
-		self.opt_path = None              # init by Graph._optimise_graph_edges
-		self.opt_path_length = None       # init by Graph._optimise_graph_edges
+		self._opt_path = None              # init by Graph._optimise_graph_edges
+		self._opt_path_length = None       # init by Graph._optimise_graph_edges
 		
-		self.opt_gate_path = None         # TODO
-		self.opt_gate_path_length = None  # TODO
+		self._opt_gate_path = None         # TODO
+		self._opt_gate_path_length = None  # TODO
+	
+	@property
+	def node_a(self):
+		return self._node_a
+		
+	@property
+	def node_b(self):
+		return self._node_b
 	
 	def nodes(self):
 		""" return the nodes which are associated to the edge """
 		return {self.node_a,self.node_b}
 	
-	def path_from(self, node):
-		""" returns the path which originates from the given node """
-		if node == self.node_a:
-			return self.path
-		elif node == self.node_b:
-			return self.path.reversed()
-		else:
-			raise RuntimeError()
-	
+	def set_optimal_path(self, opt_path):
+		""" set the optimal path between node a and node b"""
+		self._opt_gate_path = opt_path
+		self._opt_path_length = self._opt_gate_path.length()
+
 	def __eq__(self, other):
-		return self.nodes() == other.nodes()
+		raise NotImplementedError()
 
 	def __str__(self):
 		""" Generate a string representation of the current object. """
-		return "GraphEdge(%s,%s,%s)" % (self.node_a,self.node_b,self.path)
+		return "GraphEdge(%s,%s,%s)" % (self.node_a,self.node_b,self._path)
 
 	def __repr__(self):
 		""" Generate a string representation of the current object. """
-		return "GraphEdge(%r,%r,%r)" % (self.node_a,self.node_b,self.path)
+		return "GraphEdge(%r,%r,%r)" % (self.node_a,self.node_b,self._path)
+
+class DirectionalGraphEdge:
+	"""
+		Represents an edge in the graph with a direction
+	"""
+	def __init__(self, graph_edge, a_to_b):
+		# save
+		self._graph_edge = graph_edge
+		self._a_to_b = a_to_b
+	
+	def path(self):
+		""" get the path """
+		if self._a_to_b:
+			# return the original one
+			return self._graph_edge._path
+		else:
+			# return the reversed one
+			return self._graph_edge._path.reversed()
+	
+	def start(self):
+		""" get the start point """
+		return self._graph_edge.a if self._a_to_b else self._graph_edge.b
+
+	def end(self):
+		""" get the end point """
+		return self._graph_edge.b if self._a_to_b else self._graph_edge.a
+
+	def _sort_key(self):
+		"""
+			sort the edges such that they are clock-wise ordered, i.e.
+			place  diff
+			1th    (1,0)
+			2th    (0,-1)
+			3th    (-1,0)
+			4th    (0,1)
+		"""
+		path = self.path()
+		v = path.points[1] - path.points[0]
+		if v.x == 1:    return 1
+		elif v.y == -1: return 2
+		elif v.x == -1: return 3
+		elif v.y == 1:  return 4
+		else: raise RuntimeError

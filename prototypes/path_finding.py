@@ -180,10 +180,10 @@ class MainWindow(QtGui.QMainWindow):
 										gate_pen)
 		
 		for edge in self.preprocessed.graph.edges:
-			self.draw_path( edge.path, pen )
+			self.draw_path( edge._path, pen )
 			
-			if edge.opt_path:
-				self.draw_path( edge.opt_path, opt_pen, draw_nodes=True )
+			if edge._opt_path:
+				self.draw_path( edge._opt_path, opt_pen, draw_nodes=True )
 
 	def resizeEvent(self, *args, **kwargs):
 		self.graphicsView.fitInView(self.scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio)
