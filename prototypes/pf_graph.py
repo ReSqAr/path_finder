@@ -238,8 +238,8 @@ class GraphEdge:
 	
 	def set_optimal_path(self, opt_path):
 		""" set the optimal path between node a and node b"""
-		self._opt_gate_path = opt_path
-		self._opt_path_length = self._opt_gate_path.length()
+		self._opt_path = opt_path
+		self._opt_path_length = self._opt_path.length()
 
 	def __eq__(self, other):
 		raise NotImplementedError()

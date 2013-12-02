@@ -69,7 +69,7 @@ class Map:
 		# return interesting data
 		return Map(width, height, data)
 
-	def find_tiles_in_triangle(self, base, start, end):
+	def find_tiles_in_triangle_iterator(self, base, start, end):
 		""" find all tiles in the triangle defined by the three points """
 
 		assert(isinstance(base,pf_vector.PointF))

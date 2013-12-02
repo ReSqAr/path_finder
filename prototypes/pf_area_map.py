@@ -169,7 +169,7 @@ class AreaMap(pf_map.Map):
 			
 			or, to put it differently, find the biggest t such that the triangle
 				base->start->start+t*(end-start)
-			intersects no unpassable tiles. Assuming that there is no obstruction
+			intersects no unpassable tiles. Assuming that no obstruction
 			lies on the lines base->start and start->end.
 			
 			tests:
@@ -201,81 +201,85 @@ class AreaMap(pf_map.Map):
 				Out: (0.0, GridPoint(5, 2))
 		"""
 
-		# find all tiles
-		tiles = self.find_tiles_in_triangle(base, start, end)
-		
-		# now, all tiles intersecting the triangle are in all_tiles
-		# find the ones which are obstructions
-		obstruction_tiles = [tile for tile in tiles if self[tile] != self.no_area_id]
-		if not obstruction_tiles:
-			# we have found no obstructions tiles
-			return 1.,None
-		
-		# otherwise, find the point which is the obstruction, i.e.
-		# has the smallest angle between base->point and base->start
-		# if two points have the same angle, use the one which is
-		# further away from base
-		
-		# find all points adjacent to tiles
-		obstruction_points = []
-		for tile in obstruction_tiles:
-			# compute the points which are adjacent to the obstruction tile
-			obstruction_points.extend( tile.adjacent_points() )
+		assert(isinstance(base,pf_vector.PointF))
+		assert(isinstance(start,pf_vector.PointF))
+		assert(isinstance(end,pf_vector.PointF))
 
-		# if base is one of the obstruction points, ignore it
-		if base in obstruction_points:
-			obstruction_points.remove(base)
-			
-		# compute v_start
+
+		# find inner direction
 		v_start = start - base
-		v_start_normal = v_start.left()
-		v_start_normal_length = v_start_normal.length()
-		def key(point):
-			# compute v_point
-			v_point = point - base
-			
-			# compute the angle between base->point and base->start
-			# smaller angle is better
-			# by computing the angle between base->point and the normal
-			# of base->start, i.e. the sin of the angle. because we do not
-			# care about the orientation, we take absolute value of the sine.
-			sin_angle = v_point*v_start_normal / (v_start_normal_length*v_point.length())
-			sin_angle = abs(sin_angle)
-			
-			# caveat of the method: does not distinguish 90°-angle and 90°+angle
-			# almost compute cos alpha as we are only interested in the sign
-			sign_cos_alpha = v_point*v_start
-			
-			# if angle > 90°, i.e. cos alpha < 0, say that
-			# 'sin angle' := 2 - sin angle
-			# rational: 'sin angle' has the same ordering relation as
-			#           angle for 0° to 180°, i.e. angle -> 'sin angle'
-			#           is strictely monotonic in this range
-			if sign_cos_alpha < 0:
-				sin_angle = 2. - sin_angle
-			
-			# why not to use cos angle directly:
-			# - prone to rounding errors
-			# - 10000x10000 grid, smallest sin approx 1/10000,
-			#   hence biggest cos != 1 is approx (1 - 1/10000**2)**0.5 which
-			#   is approx 1 - 5e-9, i.e. very sensitive
+		v_end   =   end - base
+		v_start_left = v_start.left()
 
-			# further away is better
-			dist_to_base = v_point.length_squared()
-			
-			return sin_angle,-dist_to_base
+		# if leftness > 0, the inner direction is to the left of v_start,
+		# otherwise to the right
+		leftness = v_start_left * v_end
+		leftness_sign = +1 if leftness >= 0 else -1
 		
-		obstructing_point = min(obstruction_points, key=key)
 		
-		# compute t value
 		
-		# t value now is the intersection of the start->end line with the
-		# halfplane which is defined by base->point
-		v_obstruction_normal = (obstructing_point.toPointF() - base).left()
-		halfplane = pf_halfplane.HalfPlane(base, v_obstruction_normal)
-		t = halfplane.find_t(start, end)
+		# the obstructing point
+		obstructing_point = None
+		# the vector base->obstructing_point
+		v_obstructing_point = None
+		# the vector v_obstructing_point.right()
+		v_obstructing_point_right = None
 
-		return t, obstructing_point
+		# iterate over all tiles
+		for tile in self.find_tiles_in_triangle_iterator(base, start, end):
+			# skip the tile if it is not obstructing
+			if self[tile] == self.no_area_id:
+				continue
+		
+			# iterate over all points which are adjacent to the tile
+			for point in tile.adjacent_points():
+				# compute v_point
+				v_point = point.toPointF() - base
+				
+				if not obstructing_point:
+					# if do not yet have an obstructing point, this one is one
+					obstructing_point = point
+					v_obstructing_point = v_point
+					v_obstructing_point_right = v_obstructing_point.right()
+					continue
+
+				# assume leftness_sign = +1.
+				# we are looking for the point which has the smallest angle
+				# with base->start. as obstructing_point is to the left of
+				# base->start (as leftness_sign = +1), if we find a point
+				# which is to the right of v_obstructing_point, then this is
+				# a new candidate. if they are on the same line, the one
+				# which is further away from base wins.
+				
+				# assuming leftness_sign = +1.
+				# if v_point is between v_obstructing_point and v_start,
+				# then it is right of v_obstructing_point, i.e. the scalar
+				# product below is positive
+				scalar_product = v_obstructing_point_right * v_point
+
+				if leftness_sign*scalar_product > 0\
+				   or\
+				   (scalar_product == 0\
+					and\
+					v_point.length_squared() > v_obstructing_point.length_squared()):
+					# we have a new candidate
+					obstructing_point = point
+					v_obstructing_point = v_point
+					v_obstructing_point_right = v_obstructing_point.right()
+
+		# if there is no obstruction point
+		if not obstructing_point:
+			return 1., None
+		else:
+			# otherwise, compute t value
+			
+			# t value now is the intersection of the start->end line with the
+			# halfplane which is defined by base->point
+			v_obstruction_normal = (obstructing_point.toPointF() - base).left()
+			halfplane = pf_halfplane.HalfPlane(base, v_obstruction_normal)
+			t = halfplane.find_t(start, end)
+
+			return t, obstructing_point
 
 	def optimise_path(self, path, max_iterations=20):
 		"""
