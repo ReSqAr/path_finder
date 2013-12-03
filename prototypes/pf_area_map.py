@@ -1,10 +1,10 @@
 import collections
 
 import pf_vector
-import pf_map
+import pf_map_base
 import pf_halfplane
 
-class AreaMap(pf_map.Map):
+class AreaMap(pf_map_base.MapBase):
 	"""
 		Creates a map where every tile is assigned to either its area_id
 		or self.no_area_id if no area could be found. Furthermore,
