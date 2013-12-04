@@ -25,7 +25,62 @@ class TestBaseMap(unittest.TestCase):
 	"""
 	def test_create(self):
 		""" test if everything works as expected """
-		self.base_map = pf_map_base.MapBase(10,10,[])
+		base_map = pf_map_base.MapBase(10,10,[])
+	
+	def test_find_gridpoints_in_triangle_iterator(self):
+		""" test find_gridpoints_in_triangle_iterator """
+		
+		# shortcut
+		GridPoint = pf_vector.GridPoint
+		
+		# create map
+		base_map = pf_map_base.MapBase(10,10,[])
+		
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(3,1)
+		c = pf_vector.PointF(2,3)
+		
+		result = list(base_map.find_gridpoints_in_triangle_iterator(a,b,c))
+		expected = [GridPoint(1,1), GridPoint(2,1), GridPoint(3,1), GridPoint(2,2), GridPoint(2,3)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(3,1)
+		c = pf_vector.PointF(1,3)
+		
+		result = list(base_map.find_gridpoints_in_triangle_iterator(a,b,c))
+		expected = [GridPoint(1,1), GridPoint(2,1), GridPoint(3,1), GridPoint(1,2), GridPoint(2,2), GridPoint(1,3)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(6,4)
+		b = pf_vector.PointF(3,1)
+		c = pf_vector.PointF(1,3)
+		
+		result = list(base_map.find_gridpoints_in_triangle_iterator(a,b,c))
+		expected = [GridPoint(3,1), GridPoint(2,2), GridPoint(3,2), GridPoint(4,2), GridPoint(1,3), GridPoint(2,3), GridPoint(3,3), GridPoint(4,3), GridPoint(5,3), GridPoint(6,4)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(5,5)
+		b = pf_vector.PointF(3,1)
+		c = pf_vector.PointF(1,3)
+		
+		result = list(base_map.find_gridpoints_in_triangle_iterator(a,b,c))
+		expected = [GridPoint(3,1), GridPoint(2,2), GridPoint(3,2), GridPoint(1,3), GridPoint(2,3), GridPoint(3,3), GridPoint(4,3), GridPoint(3,4), GridPoint(4,4), GridPoint(5,5)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(2,1)
+		c = pf_vector.PointF(3,1)
+		
+		result = list(base_map.find_gridpoints_in_triangle_iterator(a,b,c))
+		expected = []
+		self.assertEqual(result,expected)
+		
 	
 class TestRawMap(unittest.TestCase):
 	"""
