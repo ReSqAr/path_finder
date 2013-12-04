@@ -20,7 +20,7 @@ class MainWindow(QtGui.QMainWindow):
 		super(QtGui.QMainWindow,self).__init__()
 		
 		self.raw_map_path = map_path
-		self.raw_map = pf_map.RawMap.read(self.raw_map_path)
+		self.raw_map = pf_raw_map.RawMap.read(self.raw_map_path)
 		
 		self.preprocessed =\
 			pf_preprocess.PreprocessedPathFindingData(self.raw_map, lambda x: x == 255) # default 255
@@ -44,7 +44,7 @@ class MainWindow(QtGui.QMainWindow):
 		#self.draw_influence_boundaries()
 		#self.draw_influence_map(colors)
 		
-		self.draw_graph()
+		self.draw_graph(draw_gates=False, draw_path=False, draw_opt_path=True)
 		
 		
 		# maximise
@@ -144,7 +144,7 @@ class MainWindow(QtGui.QMainWindow):
 										edge.b.y*10 + 2*v_right.y,
 										pen)
 
-	def draw_graph(self):
+	def draw_graph(self, draw_gates=True, draw_path=True, draw_opt_path=True):
 		"""
 			draw the graph
 		"""
@@ -167,7 +167,7 @@ class MainWindow(QtGui.QMainWindow):
 			                      QtGui.QPen(),
 			                      QtGui.QBrush(QtCore.Qt.red))
 		
-			if node.gates:
+			if node.gates and draw_gates:
 				for gate in node.gates:
 					self.scene.addEllipse(gate.x*10-4,gate.y*10-4,8,8,
 										QtGui.QPen(),
@@ -180,9 +180,10 @@ class MainWindow(QtGui.QMainWindow):
 										gate_pen)
 		
 		for edge in self.preprocessed.graph.edges:
-			self.draw_path( edge._path, pen )
+			if draw_path:
+				self.draw_path( edge._path, pen )
 			
-			if edge._opt_path:
+			if edge._opt_path and draw_opt_path:
 				self.draw_path( edge._opt_path, opt_pen, draw_nodes=True )
 
 	def resizeEvent(self, *args, **kwargs):

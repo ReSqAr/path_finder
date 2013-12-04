@@ -171,34 +171,6 @@ class AreaMap(pf_map_base.MapBase):
 				base->start->start+t*(end-start)
 			intersects no unpassable tiles. Assuming that no obstruction
 			lies on the lines base->start and start->end.
-			
-			tests:
-				raw_map = pf_map.Map(10,10,100*[0])
-				area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
-				
-				area_map[pf_vector.GridTile(4,4)] = 0 # 4,4 is now unpassable
-				
-				base = pf_vector.PointF(2,2)
-				start = pf_vector.PointF(8,2)
-				end = pf_vector.PointF(8,2)
-				
-				area_map.find_obstruction_when_transforming_line(base, start, end)
-				Out: (1.0, None)
-				
-				area_map.find_obstruction_when_transforming_line(base, start, end)
-				Out: (0.4, GridTile(5, 4))
-				
-				area_map[pf_vector.GridTile(6,3)] = 0 # 6,3 is now unpassable
-				area_map.find_obstruction_when_transforming_line(base, start, end)
-				Out: (0.16666666666666666, GridPoint(7, 3))
-				
-				area_map[pf_vector.GridTile(4,2)] = 0 # 4,2 is now unpassable
-				area_map.find_obstruction_when_transforming_line(base, start, end)
-				Out: (0.0, GridPoint(5, 2))
-
-				area_map[pf_vector.GridTile(2,2)] = 0 # 2,2 is now unpassable
-				area_map.find_obstruction_when_transforming_line(base, start, end)
-				Out: (0.0, GridPoint(5, 2))
 		"""
 
 		assert(isinstance(base,pf_vector.PointF))
@@ -333,6 +305,7 @@ class AreaMap(pf_map_base.MapBase):
 					path.append(old_path.pop_first())
 
 			print("new path: length: %s, nodes: %d" % (path.length(),path.node_count()))
+			#print("%s" % path)
 			
 			# do it until the path does not change anymore
 			if not path_changed:

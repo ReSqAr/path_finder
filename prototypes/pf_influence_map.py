@@ -3,7 +3,7 @@ import collections
 import pf_vector
 import pf_map_base
 
-class InfluenceMap(pf_map.MapBase):
+class InfluenceMap(pf_map_base.MapBase):
 	"""
 		balloon the boundary area while preserving the homotopy type of the loops
 	"""

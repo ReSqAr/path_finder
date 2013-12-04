@@ -350,7 +350,8 @@ class PathTemplate:
 	
 	def __str__(self):
 		""" Generate a string representation of the current object. """
-		return "%s(%s)" % (self.__class__.__name__,self.points)
+		points = " -> ".join("%s|%s" % (p.x,p.y) for p in self.points)
+		return "%s(%s)" % (self.__class__.__name__,points)
 
 	def __repr__(self):
 		""" Generate a string representation of the current object. """
