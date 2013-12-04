@@ -82,6 +82,95 @@ class TestBaseMap(unittest.TestCase):
 		self.assertEqual(result,expected)
 		
 	
+	def test_find_tiles_in_triangle_iterator(self):
+		""" test find_tiles_in_triangle_iterator """
+		
+		# shortcut
+		GridTile = pf_vector.GridTile
+		
+		# create map
+		base_map = pf_map_base.MapBase(10,10,[])
+		
+		# shortcut
+		f = base_map.find_tiles_in_triangle_iterator
+		#f = lambda a,b,c: sorted(base_map.find_tiles_in_triangle_iterator_slow(a,b,c), key=lambda t: (t.y,t.x))
+		
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(3,1)
+		c = pf_vector.PointF(2,3)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1), GridTile(2,1), GridTile(1,2), GridTile(2,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(2,2)
+		c = pf_vector.PointF(1,3)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1), GridTile(1,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(2,1.8)
+		c = pf_vector.PointF(1,3)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1), GridTile(1,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(2,2.2)
+		c = pf_vector.PointF(1,3)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1), GridTile(1,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		a = pf_vector.PointF(1.8,1.2)
+		b = pf_vector.PointF(2.1,1.2)
+		c = pf_vector.PointF(2.1,2.1)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1),GridTile(2,1),GridTile(2,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		# special case 2. i_y_max == i_y_mid
+		a = pf_vector.PointF(1.2,1.8)
+		b = pf_vector.PointF(1.2,2.1)
+		c = pf_vector.PointF(2.1,2.2)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1),GridTile(1,2),GridTile(2,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		# special case 2. i_y_max == i_y_mid
+		a = pf_vector.PointF(1.2,1.8)
+		b = pf_vector.PointF(2.1,2.1)
+		c = pf_vector.PointF(1.2,2.2)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1),GridTile(1,2),GridTile(2,2)]
+		self.assertEqual(result,expected)
+
+		# triangle (draw it!)
+		# special case 1. i_y_min == i_y_mid
+		a = pf_vector.PointF(1,1)
+		b = pf_vector.PointF(2.1,1)
+		c = pf_vector.PointF(1,2)
+		
+		result = list(f(a,b,c))
+		expected = [GridTile(1,1),GridTile(2,1)]
+		self.assertEqual(result,expected)
+
+
 class TestRawMap(unittest.TestCase):
 	"""
 		test pf_raw_map

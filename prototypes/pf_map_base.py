@@ -43,6 +43,8 @@ class MapBase:
 		
 		# tolerance for the conversion to integer values
 		eps = 1e-6
+		eps_floor = lambda x: math.floor(x + eps)
+		eps_ceil = lambda x: math.ceil(x - eps)
 		
 		# sort the points by ascending y-coordinate
 		p_y_min,p_mid,p_y_max = sorted([a,b,c],key=lambda p:p.y)
@@ -57,8 +59,8 @@ class MapBase:
 		#   (largest integer <= p_y_max.y)
 		
 		# (we use eps here to counter rounding artifacts)
-		i_y_min = math.ceil(p_y_min.y - eps)
-		i_y_max = math.floor(p_y_max.y + eps)
+		i_y_min = eps_ceil(p_y_min.y)
+		i_y_max = eps_floor(p_y_max.y)
 
 		# initialise y
 		y = i_y_min
@@ -89,8 +91,8 @@ class MapBase:
 			
 			# now find the largest integer interval in [x1,x2]
 			# (we use eps here to counter rounding artifacts)
-			i1 = math.ceil(x1 - eps)
-			i2 = math.floor(x2 + eps)
+			i1 = eps_ceil(x1)
+			i2 = eps_floor(x2)
 			
 			# communicate the vector
 			for i in range(i1,i2+1):
@@ -120,8 +122,8 @@ class MapBase:
 			
 			# now find the largest integer interval in [x1,x2]
 			# (we use eps here to counter rounding artifacts)
-			i1 = math.ceil(x1 - eps)
-			i2 = math.floor(x2 + eps)
+			i1 = eps_ceil(x1)
+			i2 = eps_floor(x2)
 			
 			# communicate the vector
 			for i in range(i1,i2+1):
@@ -130,7 +132,113 @@ class MapBase:
 			# increase y
 			y += 1
 		
-	def find_tiles_in_triangle_iterator(self, base, start, end):
+	def find_tiles_in_triangle_iterator(self, a, b, c):
+		""" find all tiles in the triangle defined by the three points """
+
+		assert(isinstance(a,pf_vector.PointF))
+		assert(isinstance(b,pf_vector.PointF))
+		assert(isinstance(c,pf_vector.PointF))
+		
+		# tolerance for the conversion to integer values
+		eps = 1e-6
+		eps_floor = lambda x: math.floor(x + eps)
+		eps_ceil = lambda x: math.ceil(x - eps)
+		
+		# sort the points by ascending y-coordinate
+		p_y_min,p_mid,p_y_max = sorted([a,b,c],key=lambda p:p.y)
+		
+		# special case: empty triangle
+		if p_y_min.y == p_y_max.y:
+			return []
+		
+		# helper
+		def intersection_with_line(y, a, b):
+			"""
+				intersection of y const with the line a->b
+				if a->b is parallel to the x-axis, the point b is used
+			"""
+			if b.y - a.y != 0.:
+				# careful: the denominator can be zero
+				t = (y - a.y) / (b.y - a.y)
+				return t * (b.x - a.x) + a.x
+			else:
+				# otherwise, a->b is parallel to the x-axis
+				return b.x
+		
+		# iterate over all y between
+		#   (largest integer <= p_y_min.y)
+		# to
+		#   (smallest integer <= p_y_max.y)
+		
+		# (we use eps here to counter rounding artifacts)
+		i_y_min = eps_floor(p_y_min.y)
+		i_y_max = eps_ceil(p_y_max.y)
+		i_y_mid = eps_ceil(p_mid.y)
+
+		# special cases:
+		# 1. i_y_min == i_y_mid: handled below
+		# 2. i_y_max == i_y_mid: handled implicitly
+		# 3. i_y_min == i_y_max: cannot happen, excluded above
+
+		# initialise lower_x_min/max
+		lower_x_min = eps_floor(p_y_min.x)
+		lower_x_max = eps_ceil(p_y_min.x)
+
+		# special case 1.: p_y_min.y == p_mid.y and both are integers
+		# then we have to add p_mid.x to the range
+		if i_y_min == i_y_mid:
+			lower_x_min = min(lower_x_min,eps_floor(p_mid.x))
+			lower_x_max = max(lower_x_max,eps_ceil(p_mid.x))
+
+		for y in range(i_y_min,i_y_max):
+			# intersection of y+1 const with p_y_min->p_y_max
+			if y+1 <= p_y_max.y:
+				x1 = intersection_with_line(y+1, p_y_min, p_y_max)
+			else:
+				# but only if it makes sense
+				x1 = p_y_max.x
+			
+			# find x2
+			if y+1 == i_y_mid:
+				# this is the change from p_y_min->p_mid to p_mid->p_y_max
+				x2 = p_mid.x
+			elif y+1 <= p_mid.y:
+				# we are looking at p_y_min->p_mid
+				x2 = intersection_with_line(y+1, p_y_min, p_mid)
+			elif y+1 <= p_y_max.y:
+				# we are looking at p_mid->p_y_max
+				# careful: if the line is parallel to the x-axis,
+				#          we want p_mid, hence it comes last
+				x2 = intersection_with_line(y+1, p_y_max, p_mid)
+			else:
+				x2 = p_y_max.x
+
+			# rearrange if needed
+			if x2 < x1:
+				x1,x2 = x2,x1
+			
+			# now find the smallest integer interval containing [x1,x2]
+			upper_x_min,upper_x_max = eps_floor(x1), eps_ceil(x2)
+			
+			# communicate all the tiles between
+			#  min(lower_x_min,upper_x_min)
+			# and
+			#   max(lower_x_max,upper_x_max)
+			i_min = min(lower_x_min,upper_x_min)
+			i_max = max(lower_x_max,upper_x_max)
+			
+			# communicate the tile
+			for i in range(i_min,i_max):
+				tile = pf_vector.GridTile(i,y)
+				if self.contains(tile):
+					yield tile
+			
+			# swap upper to lower
+			lower_x_min,lower_x_max = upper_x_min,upper_x_max
+
+
+		
+	def find_tiles_in_triangle_iterator_slow(self, base, start, end):
 		""" find all tiles in the triangle defined by the three points """
 
 		assert(isinstance(base,pf_vector.PointF))
