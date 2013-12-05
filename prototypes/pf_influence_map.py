@@ -188,6 +188,9 @@ class InfluenceMap(pf_map_base.MapBase):
 				update_loop.insert(new_edge)
 
 		new_loop = update_loop.get_array()
+		# if the loop is empty, add the smallest possible loop
+		# (this is only a hack, still the situation probably only arises
+		#  under synthetic conditions)
 		if not new_loop:
 			# create the smallest loop a->b and b->a
 			edge = loop[0]
@@ -263,7 +266,10 @@ class InfluenceMap(pf_map_base.MapBase):
 		# compute the tile to the right of path_a[0]->path_a[1]
 		tile_right = pf_vector.GridEdge(path_a.points[0],path_a.points[1]).right_tile()
 		# determine the area id of the right tile
-		area_id = self[tile_right]
+		if self.contains(tile_right):
+			area_id = self[tile_right]
+		else:
+			area_id = self.area_map.no_area_id+1 # wall id
 
 		# determine points which are off limit, i.e. left of path_a and right of path_b
 		# again, the perspective we take is from the point base
@@ -288,8 +294,8 @@ class InfluenceMap(pf_map_base.MapBase):
 		for p in path_b.points:
 			off_limit_points_b.discard(p)
 		
-		# then collect the off limit points. we have to compute it seperately
-		# to avoid masking problems
+		# then collect the off limit points. we have to compute them
+		# seperately to avoid masking problems
 		off_limit_points = off_limit_points_a | off_limit_points_b
 		
 		# initialise open points, i.e. points which have still to propagate

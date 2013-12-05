@@ -134,6 +134,24 @@ class Graph:
 						# otherwise mark it for future traversal
 						paths_to_explore.append( new_path )
 
+	def _find_gates(self):
+		""" find all gates """
+		for node in self.nodes:
+			# extract directional edges
+			d_edges = node.sorted_directional_edges()
+			# omit node with only one edge
+			if len(d_edges) <= 1:
+				continue
+			# iterate over all edges
+			for i in range(len(d_edges)):
+				# get the left and right edge and the associated path
+				edge_a,edge_b = d_edges[i],d_edges[(i+1)%len(d_edges)]
+				path_a,path_b = edge_a.path(),edge_b.path()
+				# find the point in the sector which is an obstruction
+				point = self.influence_map.nearest_area_grid_point_in_sector(node.position, path_a, path_b)
+				# add the point
+				node.gates.append(point)
+
 	def _optimise_graph_edges(self):
 		"""
 			optimise every path between nodes and hence initialises
@@ -143,16 +161,6 @@ class Graph:
 			path = edge._path.toPathF()
 			opt_path = self.area_map.optimise_path(path)
 			edge.set_optimal_path(opt_path)
-
-	def _find_gates(self):
-		""" find all gates """
-		for node in self.nodes:
-			d_edges = node.sorted_directional_edges()
-			for i in range(len(d_edges)):
-				edge_a,edge_b = d_edges[i],d_edges[(i+1)%len(d_edges)]
-				path_a,path_b = edge_a.path(),edge_b.path()
-				point = self.influence_map.nearest_area_grid_point_in_sector(node.position, path_a, path_b)
-				node.gates.append(point)
 
 
 class GraphNode:
@@ -164,6 +172,7 @@ class GraphNode:
 		self.edges = []
 
 		# slots for results of deferred calculations
+		# gate[i] is a point which lies between edge[i] and edge[i+1]
 		self.gates = []               # init by Graph._find_gates
 	
 	def _add_edge(self, edge):

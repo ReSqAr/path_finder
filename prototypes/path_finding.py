@@ -44,7 +44,7 @@ class MainWindow(QtGui.QMainWindow):
 		#self.draw_influence_boundaries()
 		#self.draw_influence_map(colors)
 		
-		self.draw_graph(draw_gates=False, draw_path=False, draw_opt_path=True)
+		self.draw_graph(draw_gates=True, draw_path=True, draw_opt_path=True)
 		
 		
 		# maximise
