@@ -253,6 +253,56 @@ class AreaMap(pf_map_base.MapBase):
 
 			return t, obstructing_point
 
+	def _optimise_path_iteration(self, path):
+		"""
+			one iteration step of the optimise path algorithm
+		"""
+		path_changed = False
+		
+		# start new path with the starting point of the path, truncate old_path
+		path,old_path = pf_vector.PathF(path.points[0:1]),pf_vector.PathF(path.points[1:])
+		
+		while not old_path.empty():
+			# take the last point of the new path
+			base = path.end()
+			
+			while old_path.node_count() >= 2:
+				p0 = old_path.pop_first()
+				p1 = old_path.start()
+				t,obs = self.find_obstruction_when_transforming_line(base,p0,p1)
+				obs = obs.toPointF() if obs is not None else None
+				
+				if obs is None:
+					# p0 is superflous, ignore it
+					path_changed = True
+					continue
+				elif obs == p0:
+					# p0 is necessary
+					path.append( p0 )
+					break
+				elif obs is not None:
+					# replace
+					#   base|->...->p0->p1
+					# by
+					#   base->obs|->pt->p1
+					# with pt = p0+t*(p1-p0)
+					path.append( obs )
+					pt = p0 + (p1-p0).scaled(t)
+					pt = pf_vector.PointF(pt.x,pt.y)
+					if obs != pt:
+						old_path.prepend(pt)
+					path_changed = True
+					break
+			else:
+				# there is only one element left, the end point which we may not change
+				path.append(old_path.pop_first())
+
+		print("new path: length: %s, nodes: %d" % (path.length(),path.node_count()))
+		#print("%s" % path)
+		
+		return path, path_changed
+			
+
 	def optimise_path(self, path, max_iterations=20):
 		"""
 			find the shortest way between path.start() and path.end()
@@ -260,52 +310,9 @@ class AreaMap(pf_map_base.MapBase):
 		"""
 		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
 
-		# original path
-		original_path = path
-
 		for iteration in range(max_iterations):
-			path_changed = False
-			
-			# start new path with the starting point of the path, truncate old_path
-			path,old_path = pf_vector.PathF(path.points[0:1]),pf_vector.PathF(path.points[1:])
-			
-			while not old_path.empty():
-				# take the last point of the new path
-				base = path.end()
-				
-				while old_path.node_count() >= 2:
-					p0 = old_path.pop_first()
-					p1 = old_path.start()
-					t,obs = self.find_obstruction_when_transforming_line(base,p0,p1)
-					obs = obs.toPointF() if obs is not None else None
-					
-					if obs is None:
-						# p0 is superflous, ignore it
-						path_changed = True
-						continue
-					elif obs == p0:
-						# p0 is necessary
-						path.append( p0 )
-						break
-					elif obs is not None:
-						# replace
-						#   base|->...->p0->p1
-						# by
-						#   base->obs|->pt->p1
-						# with pt = p0+t*(p1-p0)
-						path.append( obs )
-						pt = p0 + (p1-p0).scaled(t)
-						pt = pf_vector.PointF(pt.x,pt.y)
-						if obs != pt:
-							old_path.prepend(pt)
-						path_changed = True
-						break
-				else:
-					# there is only one element left, the end point which we may not change
-					path.append(old_path.pop_first())
-
-			print("new path: length: %s, nodes: %d" % (path.length(),path.node_count()))
-			#print("%s" % path)
+			# optimise the path
+			path, path_changed = self._optimise_path_iteration(path)
 			
 			# do it until the path does not change anymore
 			if not path_changed:
