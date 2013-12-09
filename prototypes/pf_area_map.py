@@ -381,12 +381,26 @@ class AreaMap(pf_map_base.MapBase):
 		"""
 			find the shortest path (in the homotopy class) between
 			a point on start_a->start_b and end_a->end_b taking path
-			as the starting point
+			as the starting point.
+			
+			it is assumed that the lines do not degenerate and that the
+			lines do not intersect except possibly at an end point
 			
 			the high max iteration count is due to convergance issues
 			in the projection step.
 		"""
 		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
+
+		# to help with convergance, we add additional points to the path:
+		# without any obstructions the points which are closest together
+		# are the solution, so we add this expected solution to the path
+		# incidentally this also solves a hugh class of convergance issues
+		pairs = [(s,e) for s in (start_a,start_b) for e in (end_a,end_b)]
+		s,e = min(pairs,key=lambda s_e: (s_e[1]-s_e[0]).length())
+		if path.points[0] != s:
+			path.points.insert(0,s)
+		if path.points[-1] != e:
+			path.points.append(e)
 
 		for iteration in range(max_iterations):
 			# optimise the path

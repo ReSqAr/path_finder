@@ -301,7 +301,7 @@ class TestAreaMap(unittest.TestCase):
 		# small number
 		eps = 0.001
 
-		# slow convergance
+		# slow convergance (fixed by preprocess step)
 		start_a = pf_vector.PointF(2,0)
 		start_b = pf_vector.PointF(4,eps)
 		end_a = pf_vector.PointF(2,4)
@@ -313,13 +313,13 @@ class TestAreaMap(unittest.TestCase):
 		                  pf_vector.PathF([start_b,end_b]))
 
 		area_map[pf_vector.GridTile(2,1)] = 0 # 2,1 is now unpassable
-		# prevented convergance catastrophe
+		# prevented convergance catastrophe (fixed by preprocess step)
 		start_a = pf_vector.PointF(0,0)
 		start_b = pf_vector.PointF(10,1.5)
 		end_a = pf_vector.PointF(0,3)
 		end_b = pf_vector.PointF(10,1.5)
 
-		# optimal is ???->(3,1)->(3,2)->??
+		# optimal is ???->(3,1)->(3,2)->???
 		path = pf_vector.PathF([start_a,end_a])
 		self.assertEqual(area_map.optimise_path_loose_ends(path,start_a,start_b,end_a,end_b),
 		                  pf_vector.PathF([
@@ -329,7 +329,7 @@ class TestAreaMap(unittest.TestCase):
 											pf_vector.PointF(860/409.,1098/409.)
 										]))
 
-		# convergance catastrophe
+		# convergance catastrophe (fixed by preprocess step)
 		start_a = pf_vector.PointF(2,0)
 		start_b = pf_vector.PointF(4,eps)
 		end_a = pf_vector.PointF(2,2*eps)
