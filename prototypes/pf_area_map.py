@@ -172,7 +172,6 @@ class AreaMap(pf_map_base.MapBase):
 			intersects no unpassable tiles. Assuming that no obstruction
 			lies on the lines base->start and start->end.
 		"""
-
 		assert(isinstance(base,pf_vector.PointF))
 		assert(isinstance(start,pf_vector.PointF))
 		assert(isinstance(end,pf_vector.PointF))
@@ -327,6 +326,9 @@ class AreaMap(pf_map_base.MapBase):
 	@staticmethod
 	def __project_point_on_line(p, a, b):
 		""" project the point p on the line a->b """
+		# care about the degenerate case:
+		if a == b:
+			return a
 		# a->b is given by a + t(b-a)
 		# we want to project it on the line, i.e. project
 		# p - a on t(b - a). we can do this by multiplying
@@ -368,12 +370,12 @@ class AreaMap(pf_map_base.MapBase):
 				# if there is an obstruction
 				# compute the point on the line line_p->p
 				# (especially this is a valid end point)
-				pt = p0 + (p-p0).scaled(t)
+				pt = p0 + t*(p-p0)
 				pt = pf_vector.PointF(pt.x,pt.y)
 
 				# replace base->p0 by base->obs->pt
 				path.points[-1] = obs.toPointF()
-				if obs != pt:
+				if obs.toPointF() != pt:
 					path.points.append(pt)
 		return path
 
@@ -383,18 +385,26 @@ class AreaMap(pf_map_base.MapBase):
 			a point on start_a->start_b and end_a->end_b taking path
 			as the starting point.
 			
-			it is assumed that the lines do not degenerate and that the
-			lines do not intersect except possibly at an end point
+			it is assumed that the lines do not intersect except possibly
+			at an end point
 			
 			the high max iteration count is due to convergance issues
 			in the projection step.
 		"""
+		assert(isinstance(start_a,pf_vector.PointF))
+		assert(isinstance(start_b,pf_vector.PointF))
+		assert(isinstance(end_a,pf_vector.PointF))
+		assert(isinstance(end_b,pf_vector.PointF))
+
 		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
+
+		# copy path
+		path = pf_vector.PathF(path.points[:])
 
 		# to help with convergance, we add additional points to the path:
 		# without any obstructions the points which are closest together
 		# are the solution, so we add this expected solution to the path
-		# incidentally this also solves a hugh class of convergance issues
+		# this solves a hugh class of convergance issues.
 		pairs = [(s,e) for s in (start_a,start_b) for e in (end_a,end_b)]
 		s,e = min(pairs,key=lambda s_e: (s_e[1]-s_e[0]).length())
 		if path.points[0] != s:

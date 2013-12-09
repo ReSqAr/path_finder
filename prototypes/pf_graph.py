@@ -188,9 +188,12 @@ class Graph:
 				for gate_b in edge._node_b_gates:
 					# hence we consider the gate a->gate_a and b->gate_b
 					opt = self.area_map.optimise_path_loose_ends(
-					                                    edge._opt_path,
-					                                    edge.node_a.position, gate_a,
-					                                    edge.node_b.position, gate_b)
+					                               edge._opt_path,
+					                               edge.node_a.position.toPointF(),
+					                               gate_a.toPointF(),
+					                               edge.node_b.position.toPointF(),
+					                               gate_b.toPointF()
+					                            )
 					paths.append(opt)
 			
 			# take the smallest one
