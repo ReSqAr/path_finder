@@ -377,11 +377,14 @@ class AreaMap(pf_map_base.MapBase):
 					path.points.append(pt)
 		return path
 
-	def optimise_path_loose_ends(self, path, start_a, start_b, end_a, end_b, max_iterations=20):
+	def optimise_path_loose_ends(self, path, start_a, start_b, end_a, end_b, max_iterations=1000):
 		"""
 			find the shortest path (in the homotopy class) between
 			a point on start_a->start_b and end_a->end_b taking path
 			as the starting point
+			
+			the high max iteration count is due to convergance issues
+			in the projection step.
 		"""
 		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
 

@@ -53,17 +53,25 @@ class Graph:
 		
 		print("creating area graph...")
 		
+		print("    1. creating nodes...")
 		# create the nodes
 		self._create_graph_nodes()
 		
+		print("    2. creating edges...")
 		# create the edges
 		self._create_graph_edges()
 		
+		print("    3. find gates...")
 		# find the gates
 		self._find_gates()
 		
-		# optimise the edges
-		self._optimise_graph_edges()
+		print("    4. optimise edges...")
+		# optimise the edge paths
+		self._optimise_edge_paths()
+		
+		print("    5. optimise gates...")
+		# optimise the gate paths
+		self._optimise_gate_paths()
 		
 		print("done, found %d nodes and %d edges" % (len(self.nodes),len(self.edges),))
 
@@ -145,14 +153,15 @@ class Graph:
 			# iterate over all edges
 			for i in range(len(d_edges)):
 				# get the left and right edge and the associated path
-				edge_a,edge_b = d_edges[i],d_edges[(i+1)%len(d_edges)]
-				path_a,path_b = edge_a.path(),edge_b.path()
+				d_edge_a,d_edge_b = d_edges[i],d_edges[(i+1)%len(d_edges)]
+				path_a,path_b = d_edge_a.path(),d_edge_b.path()
 				# find the point in the sector which is an obstruction
 				point = self.influence_map.nearest_area_grid_point_in_sector(node.position, path_a, path_b)
-				# add the point
-				node.gates.append(point)
+				# announce the point to d_edge_a and d_edge_b
+				d_edge_a.add_start_gate(point)
+				d_edge_b.add_start_gate(point)
 
-	def _optimise_graph_edges(self):
+	def _optimise_edge_paths(self):
 		"""
 			optimise every path between nodes and hence initialises
 			GraphEdge.opt_path and GraphEdge.opt_path_length
@@ -161,7 +170,31 @@ class Graph:
 			path = edge._path.toPathF()
 			opt_path = self.area_map.optimise_path(path)
 			edge.set_optimal_path(opt_path)
-
+	
+	def _optimise_gate_paths(self):
+		"""
+			optimise all gate paths
+		"""
+		for edge in self.edges:
+			assert( len(edge._node_a_gates) in (0,2) )
+			assert( len(edge._node_b_gates) in (0,2) )
+			# only optimise if both nodes have gates
+			if len(edge._node_a_gates) != 2 or len(edge._node_b_gates) != 2:
+				continue
+			
+			# iterate over all possible gates
+			paths = []
+			for gate_a in edge._node_a_gates:
+				for gate_b in edge._node_b_gates:
+					# hence we consider the gate a->gate_a and b->gate_b
+					opt = self.area_map.optimise_path_loose_ends(
+					                                    edge._opt_path,
+					                                    edge.node_a.position, gate_a,
+					                                    edge.node_b.position, gate_b)
+					paths.append(opt)
+			
+			# take the smallest one
+			edge.set_optimal_gate_path(min(paths,key=lambda p:p.length()))
 
 class GraphNode:
 	"""
@@ -227,11 +260,14 @@ class GraphEdge:
 		self._path  = path
 		
 		# slots for results of deferred calculations
-		self._opt_path = None              # init by Graph._optimise_graph_edges
-		self._opt_path_length = None       # init by Graph._optimise_graph_edges
+		self._node_a_gates = []            # init by Graph._find_gates
+		self._node_b_gates = []            # init by Graph._find_gates
 		
-		self._opt_gate_path = None         # TODO
-		self._opt_gate_path_length = None  # TODO
+		self._opt_path = None              # init by Graph._optimise_edge_paths
+		self._opt_path_length = None       # init by Graph._optimise_edge_paths
+		
+		self._opt_gate_path = None         # init by Graph._optimise_gate_paths
+		self._opt_gate_path_length = None  # init by Graph._optimise_gate_paths
 	
 	@property
 	def node_a(self):
@@ -245,10 +281,23 @@ class GraphEdge:
 		""" return the nodes which are associated to the edge """
 		return {self.node_a,self.node_b}
 	
+	def add_a_gate(self, gate_point):
+		""" add the point to the _node_a_gates list """
+		self._node_a_gates.append(gate_point)
+	
+	def add_b_gate(self, gate_point):
+		""" add the point to the _node_b_gates list """
+		self._node_b_gates.append(gate_point)
+	
 	def set_optimal_path(self, opt_path):
 		""" set the optimal path between node a and node b"""
 		self._opt_path = opt_path
 		self._opt_path_length = self._opt_path.length()
+
+	def set_optimal_gate_path(self, opt_gate_path):
+		""" set the optimal gate path between node a and node b"""
+		self._opt_gate_path = opt_gate_path
+		self._opt_gate_path = self._opt_gate_path.length()
 
 	def __eq__(self, other):
 		raise NotImplementedError()
@@ -286,6 +335,13 @@ class DirectionalGraphEdge:
 	def end(self):
 		""" get the end point """
 		return self._graph_edge.b if self._a_to_b else self._graph_edge.a
+
+	def add_start_gate(self, gate_point):
+		""" add the gate point to the correct list"""
+		if self._a_to_b:
+			self._graph_edge.add_a_gate(gate_point)
+		else:
+			self._graph_edge.add_b_gate(gate_point)
 
 	def _sort_key(self):
 		"""
