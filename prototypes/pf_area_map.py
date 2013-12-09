@@ -253,7 +253,7 @@ class AreaMap(pf_map_base.MapBase):
 
 			return t, obstructing_point
 
-	def _optimise_path_iteration(self, path):
+	def __optimise_path_iteration(self, path):
 		"""
 			one iteration step of the optimise path algorithm
 		"""
@@ -305,15 +305,104 @@ class AreaMap(pf_map_base.MapBase):
 
 	def optimise_path(self, path, max_iterations=20):
 		"""
-			find the shortest way between path.start() and path.end()
-			taking path as the starting point
+			find the shortest path (in the homotopy class) between
+			path.start() and path.end() taking path as the starting point
 		"""
 		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
 
 		for iteration in range(max_iterations):
 			# optimise the path
-			path, path_changed = self._optimise_path_iteration(path)
+			path, path_changed = self.__optimise_path_iteration(path)
 			
+			# do it until the path does not change anymore
+			if not path_changed:
+				break
+		else:
+			raise RuntimeError("Needed way too many iterations.")
+		
+		print("done")
+		
+		return path
+
+	@staticmethod
+	def __project_point_on_line(p, a, b):
+		""" project the point p on the line a->b """
+		# a->b is given by a + t(b-a)
+		# we want to project it on the line, i.e. project
+		# p - a on t(b - a). we can do this by multiplying
+		# the equation with (b - a) and solve for t:
+		t = (p - a)*(b - a) / (b - a).length()**2
+		# clamp t to [0,1]
+		if t > 1.: t = 1.
+		if t < 0.: t = 0.
+		# compute the point p
+		p = a + t*(b - a)
+		return pf_vector.PointF(p.x,p.y)
+
+	def optimise_point_to_line(self, point, p0, line_a, line_b):
+		"""
+			find the shortest between the point and the line line_a->line_b
+			when assuming that the line point->p0 is not obstructed
+		"""
+		path = pf_vector.PathF([point,p0])
+
+		while True:
+			# short cuts
+			line_p = path.points[-1] 
+			base = path.points[-2]
+			# compute the projection of base to line_a->line_b
+			p = self.__project_point_on_line(base, line_a, line_b)
+			
+			# only do something if there is a chance of change
+			if p == line_p:
+				break
+			
+			# we now want to transform the line base->line_p to base->p
+			t,obs = self.find_obstruction_when_transforming_line(base,line_p,p)
+			
+			# if there is no obstruction
+			if not obs:
+				# just change it, the straight line is valid
+				path.points[-1] = p
+			elif obs:
+				# if there is an obstruction
+				# compute the point on the line line_p->p
+				# (especially this is a valid end point)
+				pt = p0 + (p-p0).scaled(t)
+				pt = pf_vector.PointF(pt.x,pt.y)
+
+				# replace base->p0 by base->obs->pt
+				path.points[-1] = obs.toPointF()
+				if obs != pt:
+					path.points.append(pt)
+		return path
+
+	def optimise_path_loose_ends(self, path, start_a, start_b, end_a, end_b, max_iterations=20):
+		"""
+			find the shortest path (in the homotopy class) between
+			a point on start_a->start_b and end_a->end_b taking path
+			as the starting point
+		"""
+		print("optimising path of length %s (nodes: %d)..." % (path.length(),path.node_count()))
+
+		for iteration in range(max_iterations):
+			# optimise the path
+			path, path_changed = self.__optimise_path_iteration(path)
+
+			# compute the path from path.points[1] to the line start_a->start_b
+			partial_path = self.optimise_point_to_line(path.points[1], path.points[0], start_a, start_b)
+			# add it needed (which is identified by a change of base points)
+			if partial_path.points[-1] != path.points[0]:
+				path.points[:2] = reversed(partial_path.points)
+				path_changed = True
+
+			# compute the path from path.points[-2] to the line start_a->start_b
+			partial_path = self.optimise_point_to_line(path.points[-2], path.points[-1], end_a, end_b)
+			# add it needed (which is identified by a change of base points)
+			if partial_path.points[-1] != path.points[-1]:
+				path.points[-2:] = partial_path.points
+				path_changed = True
+
 			# do it until the path does not change anymore
 			if not path_changed:
 				break

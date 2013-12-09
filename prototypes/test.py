@@ -241,7 +241,71 @@ class TestAreaMap(unittest.TestCase):
 		self.assertEqual(area_map.find_obstruction_when_transforming_line(base, start, end),
 		                  (5./7., pf_vector.GridPoint(6, 6)))
 
+	def test_optimise_point_to_line(self):
+		""" test optimise_point_to_line """
+		raw_map = pf_raw_map.RawMap(10,10,100*[0])
+		area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
+
+		p = pf_vector.PointF(3,4)
+		a = pf_vector.PointF(2,0)
+		b = pf_vector.PointF(4,0)
+		p0 = a
+
+		# direct path p->(3,0) is valid and optimal
+		self.assertEqual(area_map.optimise_point_to_line(p,p0,a,b),
+		                  pf_vector.PathF([p,pf_vector.PointF(3,0)]))
+
+		# direct path p->a is valid and optimal
+		p = pf_vector.PointF(1,4)
+		self.assertEqual(area_map.optimise_point_to_line(p,p0,a,b),
+		                  pf_vector.PathF([p,a]))
+
+		# direct path p->b is valid and optimal
+		p = pf_vector.PointF(5,4)
+		self.assertEqual(area_map.optimise_point_to_line(p,p0,a,b),
+		                  pf_vector.PathF([p,b]))
+		
+		print("h")
+		# direct path p->b is not valid anymore, but
+		# p->(3,2)->(3,0) is valid and optimal.
+		# also note that p->a is valid.
+		area_map[pf_vector.GridTile(3,1)] = 0 # 3,1 is now unpassable
+		p = pf_vector.PointF(4,4)
+		self.assertEqual(area_map.optimise_point_to_line(p,p0,a,b),
+		        pf_vector.PathF([p,pf_vector.PointF(3,2),pf_vector.PointF(3,0)]))
+	
+	def optimise_path_loose_ends(self):
+		""" test optimise_path_loose_ends """
+		raw_map = pf_raw_map.RawMap(10,10,100*[0])
+		area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
+
+		start_a = pf_vector.PointF(2,0)
+		start_b = pf_vector.PointF(4,0)
+		end_a = pf_vector.PointF(4,4)
+		end_b = pf_vector.PointF(6,4)
+
+		# direct start_b->end_a is valid and optimal
+		path = pf_vector.PathF([start_a,end_b])
+		self.assertEqual(area_map.optimise_path_loose_ends(path,start_a,start_b,end_a,end_b),
+		                  pf_vector.PathF([start_b,end_a]))
+
+		area_map[pf_vector.GridTile(3,1)] = 0 # 3,1 is now unpassable
+		# direct start_b->end_a is not valid anymore. however
+		# (3,0)->(3,2)->end_a is. note that start_a->end_a is valid
+		path = pf_vector.PathF([start_a,end_a])
+		self.assertEqual(area_map.optimise_path_loose_ends(path,start_a,start_b,end_a,end_b),
+		                  pf_vector.PathF([pf_vector.PointF(3,0),pf_vector.PointF(3,2),end_a]))
 
 
+class TestInfluenceMap(unittest.TestCase):
+	"""
+		test pf_area_map
+	"""
+	def test_create(self):
+		""" test if everything works as expected """
+		raw_map = pf_raw_map.RawMap(10,10,100*[0])
+		area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
+		influence_map = pf_area_map.InfluenceMap(area_map)
+	
 if __name__ == '__main__':
 	unittest.main()

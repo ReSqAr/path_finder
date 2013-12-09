@@ -7,7 +7,7 @@ class InfluenceMap(pf_map_base.MapBase):
 	"""
 		balloon the boundary area while preserving the homotopy type of the loops
 	"""
-	def __init__(self, area_map,):
+	def __init__(self, area_map):
 		# save the area map
 		self.area_map = area_map
 

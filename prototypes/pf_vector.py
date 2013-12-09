@@ -24,7 +24,13 @@ class Vector:
 	
 	def __mul__(self, other):
 		""" returns the scalar product """
+		assert(isinstance(other,Vector))
 		return self.x * other.x  +  self.y * other.y
+
+	def __rmul__(self, other):
+		""" returns self scaled by a scalar"""
+		assert(isinstance(other,float))
+		return self.scaled(other)
 
 	def length_squared(self):
 		"""
