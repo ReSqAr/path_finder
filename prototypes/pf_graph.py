@@ -181,23 +181,37 @@ class Graph:
 			# only optimise if both nodes have gates
 			if len(edge._node_a_gates) != 2 or len(edge._node_b_gates) != 2:
 				continue
+		
+			# compute optimal gate path
+			opt_gate_path = self._opt_gate_path(edge.node_a,edge._node_a_gates,
+			                                    edge.node_b,edge._node_b_gates,
+			                                    edge._opt_path)
 			
-			# iterate over all possible gates
-			paths = []
-			for gate_a in edge._node_a_gates:
-				for gate_b in edge._node_b_gates:
-					# hence we consider the gate a->gate_a and b->gate_b
-					opt = self.area_map.optimise_path_loose_ends(
-					                               edge._opt_path,
-					                               edge.node_a.position.toPointF(),
-					                               gate_a.toPointF(),
-					                               edge.node_b.position.toPointF(),
-					                               gate_b.toPointF()
-					                            )
-					paths.append(opt)
-			
-			# take the smallest one
-			edge.set_optimal_gate_path(min(paths,key=lambda p:p.length()))
+			# save it
+			edge.set_optimal_gate_path( opt_gate_path )
+
+	def _opt_gate_path(self, node_a, node_a_gates, node_b, node_b_gates, path):
+		"""
+			compute the gate distance between node_a and node_b
+			with the initial path path
+		"""
+		
+		# iterate over all possible gates
+		gate_paths = []
+		for gate_a in node_a_gates:
+			for gate_b in node_b_gates:
+				# hence we consider the gate a->gate_a and b->gate_b
+				opt = self.area_map.optimise_path_loose_ends(
+												path,
+												node_a.position.toPointF(),
+												gate_a.toPointF(),
+												node_b.position.toPointF(),
+												gate_b.toPointF()
+											)
+				gate_paths.append(opt)
+		
+		# take the smallest one
+		return min(gate_paths,key=lambda p:p.length())
 
 class GraphNode:
 	"""
