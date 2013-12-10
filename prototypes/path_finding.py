@@ -44,8 +44,10 @@ class MainWindow(QtGui.QMainWindow):
 		#self.draw_influence_boundaries()
 		#self.draw_influence_map(colors)
 		
-		self.draw_graph(draw_gates=True, draw_path=True, draw_opt_path=True)
-		
+		self.draw_graph(draw_gates=True,
+		                   draw_path=True,
+		                   draw_opt_path=True,
+		                   draw_opt_gate_path=True)
 		
 		# maximise
 		self.showMaximized()
@@ -144,19 +146,25 @@ class MainWindow(QtGui.QMainWindow):
 										edge.b.y*10 + 2*v_right.y,
 										pen)
 
-	def draw_graph(self, draw_gates=True, draw_path=True, draw_opt_path=True):
+	def draw_graph(self, draw_gates=True,
+	                     draw_path=True,
+	                     draw_opt_path=True,
+	                     draw_opt_gate_path=True):
 		"""
 			draw the graph
 		"""
 		pen = QtGui.QPen()
-		pen.setWidth(2)
+		pen.setWidth(4)
 		pen.setColor(QtGui.QColor("orange"))
 		gate_pen = QtGui.QPen()
-		gate_pen.setWidth(2)
+		gate_pen.setWidth(3)
 		gate_pen.setColor(QtGui.QColor("green"))
 		opt_pen = QtGui.QPen()
 		opt_pen.setWidth(2)
 		opt_pen.setColor(QtGui.QColor("orchid"))
+		opt_gate_pen = QtGui.QPen()
+		opt_gate_pen.setWidth(1)
+		opt_gate_pen.setColor(QtGui.QColor("red"))
 
 		for node in self.preprocessed.graph.nodes:
 			#print(node)
@@ -167,24 +175,29 @@ class MainWindow(QtGui.QMainWindow):
 			                      QtGui.QPen(),
 			                      QtGui.QBrush(QtCore.Qt.red))
 		
-			if node.gates and draw_gates:
-				for gate in node.gates:
-					self.scene.addEllipse(gate.x*10-4,gate.y*10-4,8,8,
-										QtGui.QPen(),
-										QtGui.QBrush(QtCore.Qt.magenta))
-
-					self.scene.addLine(x*10,
-										y*10,
-										gate.x*10,
-										gate.y*10,
-										gate_pen)
-		
 		for edge in self.preprocessed.graph.edges:
 			if draw_path:
 				self.draw_path( edge._path, pen )
 			
+			if draw_gates:
+				gates = [(edge.node_a,g) for g in edge._node_a_gates] + [(edge.node_b,g) for g in edge._node_b_gates]
+				for node,gate in gates:
+					self.scene.addEllipse(gate.x*10-4,gate.y*10-4,8,8,
+										QtGui.QPen(),
+										QtGui.QBrush(QtCore.Qt.magenta))
+
+					self.scene.addLine(node.position.x*10,
+										node.position.y*10,
+										gate.x*10,
+										gate.y*10,
+										gate_pen)
+		
+
 			if edge._opt_path and draw_opt_path:
 				self.draw_path( edge._opt_path, opt_pen, draw_nodes=True )
+
+			if edge._opt_gate_path and draw_opt_gate_path:
+				self.draw_path( edge._opt_gate_path, opt_gate_pen, draw_nodes=True )
 
 	def resizeEvent(self, *args, **kwargs):
 		self.graphicsView.fitInView(self.scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio)

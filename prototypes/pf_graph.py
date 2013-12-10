@@ -300,7 +300,7 @@ class GraphEdge:
 	def set_optimal_gate_path(self, opt_gate_path):
 		""" set the optimal gate path between node a and node b"""
 		self._opt_gate_path = opt_gate_path
-		self._opt_gate_path = self._opt_gate_path.length()
+		self._opt_gate_path_length = self._opt_gate_path.length()
 
 	def __eq__(self, other):
 		raise NotImplementedError()
