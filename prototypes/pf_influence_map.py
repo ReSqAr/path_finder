@@ -333,8 +333,7 @@ class InfluenceMap(pf_map_base.MapBase):
 					open_points.append( new_point )
 					seen_points.add( new_point )
 		
-		print(base)
-		return pf_vector.GridPoint(-20,10)
+		raise RuntimeError("Cannot find gate for %s." % base)
 
 
 

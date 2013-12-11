@@ -37,7 +37,7 @@ class Graph:
 		node_b = self._node_positions[path.end()]
 		# does the edge already exist? if yes skip the process
 		for edge in node_a.edges:
-			if edge._path == path:
+			if path.directionless_compare(edge._path):
 				return
 		# create the edge
 		edge = GraphEdge( node_a, node_b, path )
@@ -376,3 +376,11 @@ class DirectionalGraphEdge:
 		elif v.x == -1: return 3
 		elif v.y == 1:  return 4
 		else: raise RuntimeError
+
+	def __eq__(self, other):
+		# TODO: a more sophisticated identity is needed: (edge_id,direction)
+		return self.path == self.other
+
+	def __hash__(self):
+		return hash(self.position)
+

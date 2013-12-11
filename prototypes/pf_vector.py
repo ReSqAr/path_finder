@@ -350,9 +350,16 @@ class PathTemplate:
 		          )
 	
 	def __eq__(self, other):
-		""" equality of paths means equality disregarding the direction """
-		return tuple(self.points) == tuple(other.points)\
-		       or tuple(self.points) == tuple(reversed(other.points))
+		""" equality of paths means equality of points """
+		return tuple(self.points) == tuple(other.points)
+	
+	def directionless_compare(self, other):
+		""" compare the paths but disregard the direction """
+		return self == other or self.reversed() == other
+	
+	def __hash__(self, other):
+		""" just use the the tuple hash function """
+		return hash( tuple(self.points) )
 	
 	def __str__(self):
 		""" Generate a string representation of the current object. """
