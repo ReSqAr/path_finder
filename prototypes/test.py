@@ -9,6 +9,7 @@ import pf_vector
 import pf_map_base
 import pf_raw_map
 import pf_area_map
+import pf_graph_shortest_path
 
 # available methods:
 # - assertFalse, assertTrue
@@ -352,5 +353,161 @@ class TestInfluenceMap(unittest.TestCase):
 		area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
 		influence_map = pf_area_map.InfluenceMap(area_map)
 	
+class TestShortestPath(unittest.TestCase):
+	"""
+		test pf_graph_shortest_path
+	"""
+	
+	def create_edge(self, start, end):
+		""" helper method which creates an edge """
+		class Edge:
+			def __init__(self, start, end):
+				self._start,self._end = start,end
+			def start(self): return self._start
+			def end(self): return self._end
+			def __str__(self): return "Edge(%s,%s)" % (self.start(),self.end())
+		return Edge(start,end)
+	
+	def get_edges_function(self, raw_edges):
+		def get_edges(node):
+			edges = []
+			for raw_edge in raw_edges:
+				if node in raw_edge:
+					other = (set(raw_edge) - {node}).pop()
+					edges.append(self.create_edge(node,other))
+			return edges
+		return get_edges
+	
+	def helper_test(self, nodes, get_edges, exact_eval, range_eval, start, end, expected):
+		finder = pf_graph_shortest_path.ShortestPathFinder(nodes, get_edges, exact_eval, range_eval)
+		path = finder.find_path(start,end)
+		
+		# path may only be None if we know there exists no path
+		if expected is None:
+			self.assertIsNone(path)
+			return
+		
+		self.assertIsNotNone(path)
+		self.assertEqual( len(path._edges), len(expected))
+		# compare edges
+		for p_edge, e_edge in zip(path._edges,expected):
+			self.assertEqual( p_edge.start(), e_edge.start())
+			self.assertEqual( p_edge.end(), e_edge.end())
+
+	def test_disconnected_2_nodes(self):
+		""" test if the algorithm works with a disfunctional estimator on 2 nodes """
+		
+		# graph:
+		#   nodes: 0,1
+		#   edges: 
+		
+		nodes = [0,1]
+		raw_edges = {  }
+		get_edges = self.get_edges_function(raw_edges)
+		def exact_eval(path):
+			raise RuntimeError("may not be called")
+		def range_eval(path):
+			raise RuntimeError("may not be called")
+		
+		start, end = 0,1
+		expected = None
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+	
+	def test_no_estimator_2_nodes(self):
+		""" test if the algorithm works with a disfunctional estimator on 2 nodes """
+		
+		# graph:
+		#   nodes: 0,1
+		#   edges: 0->1 -> estimator: (0,inf), exact: 1
+		
+		nodes = [0,1]
+		raw_edges = { (0,1), }
+		get_edges = self.get_edges_function(raw_edges)
+		def exact_eval(path):
+			return len(path._edges)
+		def range_eval(path):
+			return (0,float("inf"))
+		
+		start, end = 0,1
+		expected = [self.create_edge(0,1)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 1,0
+		expected = [self.create_edge(1,0)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+	
+	def test_graph_like_2_nodes(self):
+		""" test if the algorithm works with a graph like estimator on 2 nodes """
+		
+		# graph:
+		#   nodes: 0,1
+		#   edges: 0->1 -> estimator: (1,1), exact: 1
+		
+		nodes = [0,1]
+		raw_edges = { (0,1), }
+		get_edges = self.get_edges_function(raw_edges)
+		def exact_eval(path):
+			return len(path._edges)
+		def range_eval(path):
+			e = exact_eval(path)
+			return (e,e)
+
+		start, end = 1,0
+		expected = [self.create_edge(1,0)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+
+	def test_no_estimator_3_nodes(self):
+		""" test if the algorithm works with a disfunctional estimator on 3 nodes """
+		
+		# graph:
+		#   nodes: 0,1,2
+		#   edges: 0->1 -> estimator: (0,inf), exact: 1
+		#   edges: 1->2 -> estimator: (0,inf), exact: 1
+		
+		nodes = [0,1,2]
+		raw_edges = { (0,1),(1,2) }
+		get_edges = self.get_edges_function(raw_edges)
+		def exact_eval(path):
+			return len(path._edges)
+		def range_eval(path):
+			return (0,float("inf"))
+		
+		start, end = 0,2
+		expected = [self.create_edge(0,1),self.create_edge(1,2)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 1,2
+		expected = [self.create_edge(1,2)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 1,0
+		expected = [self.create_edge(1,0)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+	
+	def test_graph_like_3_nodes(self):
+		""" test if the algorithm works with a graph like estimator on 3 nodes """
+		
+		# graph:
+		#   nodes: 0,1,2
+		#   edges: 0->1 -> estimator: (1,1), exact: 1
+		#   edges: 1->2 -> estimator: (1,1), exact: 1
+		
+		nodes = [0,1,2]
+		raw_edges = { (0,1),(1,2) }
+		get_edges = self.get_edges_function(raw_edges)
+		def exact_eval(path):
+			return len(path._edges)
+		def range_eval(path):
+			e = exact_eval(path)
+			return (e,e)
+
+		start, end = 0,2
+		expected = [self.create_edge(0,1),self.create_edge(1,2)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 1,2
+		expected = [self.create_edge(1,2)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 1,0
+		expected = [self.create_edge(1,0)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+
+
 if __name__ == '__main__':
 	unittest.main()
