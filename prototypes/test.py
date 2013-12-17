@@ -9,6 +9,7 @@ import pf_vector
 import pf_map_base
 import pf_raw_map
 import pf_area_map
+import pf_influence_map
 import pf_graph_shortest_path
 
 # available methods:
@@ -351,7 +352,7 @@ class TestInfluenceMap(unittest.TestCase):
 		""" test if everything works as expected """
 		raw_map = pf_raw_map.RawMap(10,10,100*[0])
 		area_map = pf_area_map.AreaMap(raw_map, lambda _: True)
-		influence_map = pf_area_map.InfluenceMap(area_map)
+		influence_map = pf_influence_map.InfluenceMap(area_map)
 	
 class TestShortestPath(unittest.TestCase):
 	"""

@@ -13,7 +13,7 @@ from PyQt4 import uic
 #import path_finding_algo
 
 import pf_raw_map
-import pf_preprocess
+import pf_pfdata
 
 class MainWindow(QtGui.QMainWindow):
 	def __init__(self, app, map_path):
@@ -23,7 +23,7 @@ class MainWindow(QtGui.QMainWindow):
 		self.raw_map = pf_raw_map.RawMap.read(self.raw_map_path)
 		
 		self.preprocessed =\
-			pf_preprocess.PreprocessedPathFindingData(self.raw_map, lambda x: x == 255) # default 255
+			pf_pfdata.PathFindingData(self.raw_map, lambda x: x == 255) # default 255
 
 		# init gui
 		self.initUI()

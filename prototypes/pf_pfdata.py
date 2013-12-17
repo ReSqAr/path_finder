@@ -2,7 +2,7 @@ import pf_area_map
 import pf_influence_map
 import pf_graph
 
-class PreprocessedPathFindingData:
+class PathFindingData:
 	"""
 		Holds all the preprocessed data.
 	"""
