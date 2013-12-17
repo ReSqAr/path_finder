@@ -365,6 +365,7 @@ class TestShortestPath(unittest.TestCase):
 				self._start,self._end = start,end
 			def start(self): return self._start
 			def end(self): return self._end
+			def point_set(self): return {self._start,self._end}
 			def __str__(self): return "Edge(%s,%s)" % (self.start(),self.end())
 		return Edge(start,end)
 	
@@ -378,24 +379,25 @@ class TestShortestPath(unittest.TestCase):
 			return edges
 		return get_edges
 	
-	def helper_test(self, nodes, get_edges, exact_eval, range_eval, start, end, expected):
-		finder = pf_graph_shortest_path.ShortestPathFinder(nodes, get_edges, exact_eval, range_eval)
-		path = finder.find_path(start,end)
-		
-		# path may only be None if we know there exists no path
-		if expected is None:
-			self.assertIsNone(path)
-			return
-		
-		self.assertIsNotNone(path)
-		self.assertEqual( len(path._edges), len(expected))
-		# compare edges
-		for p_edge, e_edge in zip(path._edges,expected):
-			self.assertEqual( p_edge.start(), e_edge.start())
-			self.assertEqual( p_edge.end(), e_edge.end())
+	def helper_test(self, nodes, get_edges, exact_eval, _range_eval, start, end, expected):
+		for range_eval in [_range_eval,lambda _: (0,float("inf"))]:
+			finder = pf_graph_shortest_path.ShortestPathFinder(nodes, get_edges, exact_eval, range_eval)
+			path = finder.find_path(start,end)
+			
+			# path may only be None if we know there exists no path
+			if expected is None:
+				self.assertIsNone(path)
+				continue
+			
+			self.assertIsNotNone(path)
+			self.assertEqual( len(path._edges), len(expected))
+			# compare edges
+			for p_edge, e_edge in zip(path._edges,expected):
+				self.assertEqual( p_edge.start(), e_edge.start())
+				self.assertEqual( p_edge.end(), e_edge.end())
 
 	def test_disconnected_2_nodes(self):
-		""" test if the algorithm works with a disfunctional estimator on 2 nodes """
+		""" test if the algorithm works for 2 disconnected nodes """
 		
 		# graph:
 		#   nodes: 0,1
@@ -411,28 +413,6 @@ class TestShortestPath(unittest.TestCase):
 		
 		start, end = 0,1
 		expected = None
-		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
-	
-	def test_no_estimator_2_nodes(self):
-		""" test if the algorithm works with a disfunctional estimator on 2 nodes """
-		
-		# graph:
-		#   nodes: 0,1
-		#   edges: 0->1 -> estimator: (0,inf), exact: 1
-		
-		nodes = [0,1]
-		raw_edges = { (0,1), }
-		get_edges = self.get_edges_function(raw_edges)
-		def exact_eval(path):
-			return len(path._edges)
-		def range_eval(path):
-			return (0,float("inf"))
-		
-		start, end = 0,1
-		expected = [self.create_edge(0,1)]
-		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
-		start, end = 1,0
-		expected = [self.create_edge(1,0)]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 	
 	def test_graph_like_2_nodes(self):
@@ -455,32 +435,6 @@ class TestShortestPath(unittest.TestCase):
 		expected = [self.create_edge(1,0)]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 
-	def test_no_estimator_3_nodes(self):
-		""" test if the algorithm works with a disfunctional estimator on 3 nodes """
-		
-		# graph:
-		#   nodes: 0,1,2
-		#   edges: 0->1 -> estimator: (0,inf), exact: 1
-		#   edges: 1->2 -> estimator: (0,inf), exact: 1
-		
-		nodes = [0,1,2]
-		raw_edges = { (0,1),(1,2) }
-		get_edges = self.get_edges_function(raw_edges)
-		def exact_eval(path):
-			return len(path._edges)
-		def range_eval(path):
-			return (0,float("inf"))
-		
-		start, end = 0,2
-		expected = [self.create_edge(0,1),self.create_edge(1,2)]
-		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
-		start, end = 1,2
-		expected = [self.create_edge(1,2)]
-		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
-		start, end = 1,0
-		expected = [self.create_edge(1,0)]
-		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
-	
 	def test_graph_like_3_nodes(self):
 		""" test if the algorithm works with a graph like estimator on 3 nodes """
 		
@@ -508,6 +462,43 @@ class TestShortestPath(unittest.TestCase):
 		expected = [self.create_edge(1,0)]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 
+	def test_graph_like_4_nodes(self):
+		""" test if the algorithm works with a graph like estimator on 4 nodes """
+		
+		# graph:
+		#   nodes: 0,1,2,3
+		#   edges: 0->1 -> estimator: (1,1), exact: 1
+		#   edges: 1->2 -> estimator: (3,3), exact: 2.5
+		#   edges: 2->3 -> estimator: (1,1), exact: 1
+		#   edges: 3->0 -> estimator: (1,1), exact: 1
+		
+		nodes = [0,1,2,3]
+		raw_edges = { (0,1),(1,2),(2,3),(3,0) }
+		get_edges = self.get_edges_function(raw_edges)
+		def edge_weight(edge):
+			if edge.point_set() == {0,1}:
+				return 1
+			elif edge.point_set() == {1,2}:
+				return 2.5
+			elif edge.point_set() == {2,3}:
+				return 1
+			elif edge.point_set() == {3,0}:
+				return 1
+		def exact_eval(path):
+			return sum(edge_weight(edge) for edge in path._edges)
+		def range_eval(path):
+			e = exact_eval(path)
+			return (e,e)
+
+		start, end = 0,3
+		expected = [self.create_edge(0,3)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 0,2
+		expected = [self.create_edge(0,3),self.create_edge(3,2)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
+		start, end = 1,2
+		expected = [self.create_edge(1,2)]
+		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 
 if __name__ == '__main__':
 	unittest.main()
