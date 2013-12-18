@@ -316,6 +316,7 @@ class AreaMap(pf_map_base.MapBase):
 			# do it until the path does not change anymore
 			if not path_changed:
 				break
+			
 		else:
 			raise RuntimeError("Needed way too many iterations.")
 		

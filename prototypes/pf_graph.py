@@ -178,10 +178,6 @@ class Graph:
 		for edge in self.edges:
 			assert( len(edge._node_a_gates) in (0,2) )
 			assert( len(edge._node_b_gates) in (0,2) )
-			# only optimise if both nodes have gates
-			if len(edge._node_a_gates) != 2 or len(edge._node_b_gates) != 2:
-				continue
-		
 			# compute optimal gate path
 			opt_gate_path = self._opt_gate_path(edge.node_a,edge._node_a_gates,
 			                                    edge.node_b,edge._node_b_gates,
@@ -195,6 +191,12 @@ class Graph:
 			compute the gate distance between node_a and node_b
 			with the initial path path
 		"""
+		
+		# if node a or b does not have a gate, add a virtual gate
+		if not node_a_gates:
+			node_a_gates.append( node_a.position )
+		if not node_b_gates:
+			node_b_gates.append( node_b.position )
 		
 		# iterate over all possible gates
 		gate_paths = []
@@ -345,13 +347,28 @@ class DirectionalGraphEdge:
 			# return the reversed one
 			return self._graph_edge._path.reversed()
 	
+	def opt_path(self):
+		""" get the optimal path """
+		if self._graph_edge._opt_path.points[0] == self.start().position.toPointF():
+			return self._graph_edge._opt_path
+		else:
+			return self._graph_edge._opt_path.reversed()
+	
 	def start(self):
 		""" get the start point """
-		return self._graph_edge.a if self._a_to_b else self._graph_edge.b
+		return self._graph_edge.node_a if self._a_to_b else self._graph_edge.node_b
 
 	def end(self):
 		""" get the end point """
-		return self._graph_edge.b if self._a_to_b else self._graph_edge.a
+		return self._graph_edge.node_b if self._a_to_b else self._graph_edge.node_a
+
+	def start_gates(self):
+		""" get the gates of the start point """
+		return self._graph_edge._node_a_gates if self._a_to_b else self._graph_edge._node_b_gates
+		
+	def end_gates(self):
+		""" get the gates of the end point """
+		return self._graph_edge._node_b_gates if self._a_to_b else self._graph_edge._node_a_gates
 
 	def add_start_gate(self, gate_point):
 		""" add the gate point to the correct list"""

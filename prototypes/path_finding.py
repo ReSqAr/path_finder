@@ -49,6 +49,12 @@ class MainWindow(QtGui.QMainWindow):
 		                   draw_opt_path=True,
 		                   draw_opt_gate_path=True)
 		
+		
+		start = self.preprocessed.graph.nodes[3]
+		end = self.preprocessed.graph.nodes[5]
+		path = self.preprocessed.find_path_between_nodes(start,end)
+		self.draw_optimal_path(path)
+		
 		# maximise
 		self.showMaximized()
 	
@@ -199,6 +205,13 @@ class MainWindow(QtGui.QMainWindow):
 			if edge._opt_gate_path and draw_opt_gate_path:
 				self.draw_path( edge._opt_gate_path, opt_gate_pen, draw_nodes=True )
 
+	def draw_optimal_path(self, path):
+		opt_pen = QtGui.QPen()
+		opt_pen.setWidth(4)
+		opt_pen.setColor(QtGui.QColor("yellow"))
+		
+		self.draw_path( path, opt_pen, draw_nodes=True )
+		
 	def resizeEvent(self, *args, **kwargs):
 		self.graphicsView.fitInView(self.scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio)
 		

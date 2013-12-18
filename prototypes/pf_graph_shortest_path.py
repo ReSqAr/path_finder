@@ -90,7 +90,11 @@ class ShortestPathFinder:
 		# we can get to start directly
 		UpperBound[start] = 0.
 		
+		# keep statistics
+		c_evals,e_evals,N_rejected,considered_paths = 0,0,0,0
+		
 		while OpenPaths:
+			considered_paths += 1
 			# 1. extract the element with the smallest min c(P)
 			P = min(OpenPaths, key=lambda P:self._range_eval(P)[0])
 			OpenPaths.remove(P)
@@ -100,15 +104,17 @@ class ShortestPathFinder:
 			# 2. if P_opt exists, test the length
 			# compute c(P)
 			min_cP,max_cP = self._range_eval(P)
+			c_evals += 1
 			#print("c(P):", min_cP,max_cP)
 			
 			# if all following paths are longer
 			if P_opt is not None and min_cP > P_opt_length:
 				# P_opt is the optimal path
-				return P_opt
+				break
 			
 			# 3. a) skip P if UpperBound[P.end] < min c(P)
 			if P.end() in UpperBound and UpperBound[P.end()] < min_cP:
+				N_rejected += 1
 				continue
 			
 			# 3. b) update UpperBound[P.end] if > max c(P)
@@ -120,6 +126,7 @@ class ShortestPathFinder:
 			# 4. if P.end is end, compute e(P) and update P_opt if neccessary
 			if P.end() == end:
 				eP = self._exact_eval(P)
+				e_evals += 1
 				if P_opt is None or eP < P_opt_length:
 					P_opt = P
 					P_opt_length = eP
@@ -144,6 +151,11 @@ class ShortestPathFinder:
 					new_P = P.get_extended_by(edge)
 					OpenPaths.append(new_P)
 		
+		print("c_evals:",c_evals,
+		       "e_evals:",e_evals,
+		       "N_rejected:",N_rejected,
+		       "considered_paths:",considered_paths)
+		
 		# if we end up here, we could not exit the algorithm early
 		return P_opt
 		
@@ -162,6 +174,13 @@ class Path:
 	def get_extended_by(self, edge):
 		""" get a path which es extended by the given edge """
 		return Path(self._edges + [edge])
+	
+	def nodes(self):
+		""" get all nodes """
+		if self._edges:
+			return [self._edges[0].start()] + [edge.end() for edge in self._edges] 
+		else:
+			return []
 	
 	def __str__(self):
 		return "Path: %s" % '->'.join("%s" % x for x in self._edges)

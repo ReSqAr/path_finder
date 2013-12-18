@@ -391,11 +391,8 @@ class TestShortestPath(unittest.TestCase):
 				continue
 			
 			self.assertIsNotNone(path)
-			self.assertEqual( len(path._edges), len(expected))
-			# compare edges
-			for p_edge, e_edge in zip(path._edges,expected):
-				self.assertEqual( p_edge.start(), e_edge.start())
-				self.assertEqual( p_edge.end(), e_edge.end())
+			# compare nodes
+			self.assertEqual(path.nodes(),expected)
 
 	def test_disconnected_2_nodes(self):
 		""" test if the algorithm works for 2 disconnected nodes """
@@ -433,7 +430,7 @@ class TestShortestPath(unittest.TestCase):
 			return (e,e)
 
 		start, end = 1,0
-		expected = [self.create_edge(1,0)]
+		expected = [1,0]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 
 	def test_graph_like_3_nodes(self):
@@ -454,13 +451,13 @@ class TestShortestPath(unittest.TestCase):
 			return (e,e)
 
 		start, end = 0,2
-		expected = [self.create_edge(0,1),self.create_edge(1,2)]
+		expected = [0,1,2]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 		start, end = 1,2
-		expected = [self.create_edge(1,2)]
+		expected = [1,2]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 		start, end = 1,0
-		expected = [self.create_edge(1,0)]
+		expected = [1,0]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 
 	def test_graph_like_4_nodes(self):
@@ -492,13 +489,13 @@ class TestShortestPath(unittest.TestCase):
 			return (e,e)
 
 		start, end = 0,3
-		expected = [self.create_edge(0,3)]
+		expected = [0,3]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 		start, end = 0,2
-		expected = [self.create_edge(0,3),self.create_edge(3,2)]
+		expected = [0,3,2]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 		start, end = 1,2
-		expected = [self.create_edge(1,2)]
+		expected = [1,2]
 		self.helper_test(nodes, get_edges, exact_eval, range_eval, start, end, expected)
 
 if __name__ == '__main__':
