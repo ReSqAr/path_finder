@@ -173,7 +173,10 @@ class Path:
 	
 	def get_extended_by(self, edge):
 		""" get a path which es extended by the given edge """
-		return Path(self._edges + [edge])
+		new_path = Path(self._edges + [edge])
+		# add a reference to self
+		new_path._extended_path = self
+		return new_path
 	
 	def nodes(self):
 		""" get all nodes """

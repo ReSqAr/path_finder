@@ -61,15 +61,15 @@ class Graph:
 		# create the edges
 		self._create_graph_edges()
 		
-		print("    3. find gates...")
+		print("    3. finding gates...")
 		# find the gates
 		self._find_gates()
 		
-		print("    4. optimise edges...")
+		print("    4. optimising edges...")
 		# optimise the edge paths
 		self._optimise_edge_paths()
 		
-		print("    5. optimise gates...")
+		print("    5. optimising gates...")
 		# optimise the gate paths
 		self._optimise_gate_paths()
 		
@@ -179,14 +179,16 @@ class Graph:
 			assert( len(edge._node_a_gates) in (0,2) )
 			assert( len(edge._node_b_gates) in (0,2) )
 			# compute optimal gate path
-			opt_gate_path = self._opt_gate_path(edge.node_a,edge._node_a_gates,
-			                                    edge.node_b,edge._node_b_gates,
+			opt_gate_path = self._opt_gate_path(edge.node_a.position,
+			                                       edge._node_a_gates,
+			                                    edge.node_b.position,
+			                                       edge._node_b_gates,
 			                                    edge._opt_path)
 			
 			# save it
 			edge.set_optimal_gate_path( opt_gate_path )
 
-	def _opt_gate_path(self, node_a, node_a_gates, node_b, node_b_gates, path):
+	def _opt_gate_path(self, node_a_pos, node_a_gates, node_b_pos, node_b_gates, path):
 		"""
 			compute the gate distance between node_a and node_b
 			with the initial path path
@@ -194,9 +196,9 @@ class Graph:
 		
 		# if node a or b does not have a gate, add a virtual gate
 		if not node_a_gates:
-			node_a_gates.append( node_a.position )
+			node_a_gates.append( node_a_pos )
 		if not node_b_gates:
-			node_b_gates.append( node_b.position )
+			node_b_gates.append( node_b_pos )
 		
 		# iterate over all possible gates
 		gate_paths = []
@@ -205,9 +207,9 @@ class Graph:
 				# hence we consider the gate a->gate_a and b->gate_b
 				opt = self.area_map.optimise_path_loose_ends(
 												path,
-												node_a.position.toPointF(),
+												node_a_pos.toPointF(),
 												gate_a.toPointF(),
-												node_b.position.toPointF(),
+												node_b_pos.toPointF(),
 												gate_b.toPointF()
 											)
 				gate_paths.append(opt)
@@ -300,6 +302,10 @@ class GraphEdge:
 		""" return the nodes which are associated to the edge """
 		return {self.node_a,self.node_b}
 	
+	def edge_id(self, graph):
+		""" in C++ this should be replaced by just the pointer """
+		return graph.edges.index(self)
+	
 	def add_a_gate(self, gate_point):
 		""" add the point to the _node_a_gates list """
 		self._node_a_gates.append(gate_point)
@@ -319,7 +325,10 @@ class GraphEdge:
 		self._opt_gate_path_length = self._opt_gate_path.length()
 
 	def __eq__(self, other):
-		raise NotImplementedError()
+		return self.node_a == other.node_a\
+	           and self.node_b == other.node_b\
+	           and self._path == other._path
+	
 
 	def __str__(self):
 		""" Generate a string representation of the current object. """
