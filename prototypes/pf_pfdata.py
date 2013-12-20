@@ -34,7 +34,7 @@ class PathFindingData:
 		#   one edge to a non-connectivity node. (this definition is unstable,
 		#   (as order depenendant) but in this context OK
 		
-		n = 1 # number of edges
+		n = 3 # number of edges
 		self._n_hop_dict = NHopDictionary(self.graph, self.area_map, n)
 		
 		def get_edges(node):
@@ -84,8 +84,8 @@ class PathFindingData:
 			#		print("n_hop:", est, "std:", (edge._graph_edge._opt_gate_path_length,edge._graph_edge._opt_path_length))
 			#	assert(False)
 			
-			path.c_min = [c_min_cur] + c_min[:-1]
-			path.c_max = [c_max_cur] + c_max[:-1]
+			path.c_min = [c_min_cur] + (c_min[:-1] if len(c_min) == n else c_min)
+			path.c_max = [c_max_cur] + (c_max[:-1] if len(c_max) == n else c_max)
 			return (c_min_cur,c_max_cur)
 		
 		self.finder = pf_graph_shortest_path.ShortestPathFinder(
