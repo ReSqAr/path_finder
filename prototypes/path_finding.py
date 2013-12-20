@@ -213,6 +213,12 @@ class MainWindow(QtGui.QMainWindow):
 			if False: #edge._opt_gate_path and draw_opt_gate_path:
 				self.draw_path( edge._opt_gate_path, opt_gate_pen, draw_nodes=True )
 
+		for i,node in enumerate(self.preprocessed.graph.nodes):
+			x,y = node.position.x,node.position.y
+			text = self.scene.addSimpleText("%d" % i)
+			text.setPos(10*x,10*y)
+		
+
 	def draw_optimal_path(self, path):
 		opt_pen = QtGui.QPen()
 		opt_pen.setWidth(4)
