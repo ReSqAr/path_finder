@@ -69,9 +69,9 @@ class Graph:
 		# optimise the edge paths
 		self._optimise_edge_paths()
 		
-		print("    5. optimising gates...")
-		# optimise the gate paths
-		self._optimise_gate_paths()
+		#print("    5. optimising gates...")
+		## optimise the gate paths
+		#self._optimise_gate_paths()
 		
 		print("done, found %d nodes and %d edges" % (len(self.nodes),len(self.edges),))
 
@@ -171,51 +171,24 @@ class Graph:
 			opt_path = self.area_map.optimise_path(path)
 			edge.set_optimal_path(opt_path)
 	
-	def _optimise_gate_paths(self):
-		"""
-			optimise all gate paths
-		"""
-		for edge in self.edges:
-			assert( len(edge._node_a_gates) in (0,2) )
-			assert( len(edge._node_b_gates) in (0,2) )
-			# compute optimal gate path
-			opt_gate_path = self._opt_gate_path(edge.node_a.position,
-			                                       edge._node_a_gates,
-			                                    edge.node_b.position,
-			                                       edge._node_b_gates,
-			                                    edge._opt_path)
-			
-			# save it
-			edge.set_optimal_gate_path( opt_gate_path )
+	#def _optimise_gate_paths(self):
+	#	"""
+	#		optimise all gate paths
+	#	"""
+	#	for edge in self.edges:
+	#		assert( len(edge._node_a_gates) in (0,2) )
+	#		assert( len(edge._node_b_gates) in (0,2) )
+	#		# compute optimal gate path
+	#		opt_gate_path = self._opt_gate_path(edge.node_a.position,
+	#		                                       edge._node_a_gates,
+	#		                                    edge.node_b.position,
+	#		                                       edge._node_b_gates,
+	#		                                    edge._opt_path)
+	#		
+	#		# save it
+	#		edge.set_optimal_gate_path( opt_gate_path )
 
-	def _opt_gate_path(self, node_a_pos, node_a_gates, node_b_pos, node_b_gates, path):
-		"""
-			compute the gate distance between node_a and node_b
-			with the initial path path
-		"""
-		
-		# if node a or b does not have a gate, add a virtual gate
-		if not node_a_gates:
-			node_a_gates.append( node_a_pos )
-		if not node_b_gates:
-			node_b_gates.append( node_b_pos )
-		
-		# iterate over all possible gates
-		gate_paths = []
-		for gate_a in node_a_gates:
-			for gate_b in node_b_gates:
-				# hence we consider the gate a->gate_a and b->gate_b
-				opt = self.area_map.optimise_path_loose_ends(
-												path,
-												node_a_pos.toPointF(),
-												gate_a.toPointF(),
-												node_b_pos.toPointF(),
-												gate_b.toPointF()
-											)
-				gate_paths.append(opt)
-		
-		# take the smallest one
-		return min(gate_paths,key=lambda p:p.length())
+
 
 class GraphNode:
 	"""
@@ -287,8 +260,8 @@ class GraphEdge:
 		self._opt_path = None              # init by Graph._optimise_edge_paths
 		self._opt_path_length = None       # init by Graph._optimise_edge_paths
 		
-		self._opt_gate_path = None         # init by Graph._optimise_gate_paths
-		self._opt_gate_path_length = None  # init by Graph._optimise_gate_paths
+		#self._opt_gate_path = None         # init by Graph._optimise_gate_paths
+		#self._opt_gate_path_length = None  # init by Graph._optimise_gate_paths
 	
 	@property
 	def node_a(self):
@@ -319,10 +292,10 @@ class GraphEdge:
 		self._opt_path = opt_path
 		self._opt_path_length = self._opt_path.length()
 
-	def set_optimal_gate_path(self, opt_gate_path):
-		""" set the optimal gate path between node a and node b"""
-		self._opt_gate_path = opt_gate_path
-		self._opt_gate_path_length = self._opt_gate_path.length()
+	#def set_optimal_gate_path(self, opt_gate_path):
+	#	""" set the optimal gate path between node a and node b"""
+	#	self._opt_gate_path = opt_gate_path
+	#	self._opt_gate_path_length = self._opt_gate_path.length()
 
 	def __eq__(self, other):
 		return self.node_a == other.node_a\

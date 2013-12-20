@@ -4,16 +4,17 @@ if sys.version_info < (3,2,0):
         raise RuntimeError("Python version >= 3.2 is needed.")
 
 import math
+import time
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4 import uic
 
 
-#import path_finding_algo
-
 import pf_raw_map
 import pf_pfdata
+
+import pf_shortest_path
 
 class MainWindow(QtGui.QMainWindow):
 	def __init__(self, app, map_path):
@@ -27,6 +28,8 @@ class MainWindow(QtGui.QMainWindow):
 
 		# init gui
 		self.initUI()
+		
+		self.optimal_path_objs = []
 		
 		# draw the map
 		colors = [QtCore.Qt.red, QtCore.Qt.green, QtCore.Qt.blue,
@@ -46,14 +49,8 @@ class MainWindow(QtGui.QMainWindow):
 		
 		self.draw_graph(draw_gates=True,
 		                   draw_path=True,
-		                   draw_opt_path=True,
-		                   draw_opt_gate_path=True)
+		                   draw_opt_path=True)
 		
-		
-		start = self.preprocessed.graph.nodes[3]
-		end = self.preprocessed.graph.nodes[5]
-		path = self.preprocessed.find_path_between_nodes(start,end)
-		self.draw_optimal_path(path)
 		
 		# maximise
 		self.showMaximized()
@@ -64,30 +61,42 @@ class MainWindow(QtGui.QMainWindow):
 		# source: http://bitesofcode.blogspot.co.uk/2011/10/comparison-of-loading-techniques.html
 		uic.loadUi('ui/main.ui', self)
 
-		# connect signals
+		# find widgets
 		self.graphicsView = self.findChild(QtGui.QGraphicsView,"graphicsView")
 		self.scene = QtGui.QGraphicsScene()
 		self.graphicsView.setScene(self.scene)
-
-		#self.tabs.tabCloseRequested.connect(self.tabs.removeTab)
+		
+		self.label_ouput = self.findChild(QtGui.QLabel,"output")
+		self.button_search = self.findChild(QtGui.QPushButton,"search")
+		self.spinbox_n = self.findChild(QtGui.QSpinBox,"n")
+		self.spinbox_start = self.findChild(QtGui.QSpinBox,"start")
+		self.spinbox_end = self.findChild(QtGui.QSpinBox,"end")
+		
+		# initialise widgets
+		self.spinbox_start.setMaximum(len(self.preprocessed.graph.nodes)-1)
+		self.spinbox_end.setMaximum(len(self.preprocessed.graph.nodes)-1)
+		
+		# connect signal
+		self.connect(self.button_search,QtCore.SIGNAL('clicked()'),self.search_event)
 
 	# convience method
 	def draw_path(self, path, pen, draw_nodes=False):
-		
+		objs = []
 		for p1,p0 in zip(path.points[1:],path.points[:-1]):
-			self.scene.addLine(p0.x*10,
+			x = self.scene.addLine(p0.x*10,
 								p0.y*10,
 								p1.x*10,
 								p1.y*10,
 								pen)
-
+			objs.append(x)
+			
 		if draw_nodes:
 			for p in path.points:
-				self.scene.addRect(p.x*10-2, p.y*10-2, 4, 4,
-									QtGui.QPen(),
-									QtGui.QBrush("blue"))
-		
-	
+				x = self.scene.addRect(p.x*10-2, p.y*10-2, 4, 4,
+										QtGui.QPen(),
+										QtGui.QBrush("blue"))
+				objs.append(x)
+		return objs
 	
 	def draw_bounding_box(self):
 		"""
@@ -154,8 +163,7 @@ class MainWindow(QtGui.QMainWindow):
 
 	def draw_graph(self, draw_gates=True,
 	                     draw_path=True,
-	                     draw_opt_path=True,
-	                     draw_opt_gate_path=True):
+	                     draw_opt_path=True):
 		"""
 			draw the graph
 		"""
@@ -202,7 +210,7 @@ class MainWindow(QtGui.QMainWindow):
 			if edge._opt_path and draw_opt_path:
 				self.draw_path( edge._opt_path, opt_pen, draw_nodes=True )
 
-			if edge._opt_gate_path and draw_opt_gate_path:
+			if False: #edge._opt_gate_path and draw_opt_gate_path:
 				self.draw_path( edge._opt_gate_path, opt_gate_pen, draw_nodes=True )
 
 	def draw_optimal_path(self, path):
@@ -210,8 +218,45 @@ class MainWindow(QtGui.QMainWindow):
 		opt_pen.setWidth(4)
 		opt_pen.setColor(QtGui.QColor("yellow"))
 		
-		self.draw_path( path, opt_pen, draw_nodes=True )
+		# remove old objects
+		for obj in self.optimal_path_objs:
+			obj.hide()
 		
+		objs = self.draw_path( path, opt_pen, draw_nodes=True )
+		self.optimal_path_objs = objs
+	
+	
+	def search_event(self):
+		n = self.spinbox_n.value()
+		start = self.spinbox_start.value()
+		end = self.spinbox_end.value()
+
+		self.label_ouput.setText("searching...")
+
+		if self.preprocessed.shortest_path.n != n:
+			self.preprocessed.shortest_path\
+			     = pf_shortest_path.ShortestPathSearch(self.preprocessed.graph,
+			                                           self.preprocessed.area_map, n)
+		
+		# search path
+		a = time.time()
+		start = self.preprocessed.graph.nodes[start]
+		end = self.preprocessed.graph.nodes[end]
+		path = self.preprocessed.shortest_path.find_path_between_nodes(start,end)
+		b = time.time()
+		self.draw_optimal_path(path)
+		
+		txt  = "length: %f\n" % path.length()
+		txt += "needed %fs" % (b-a)
+		
+		self.label_ouput.setText(txt)
+	
+	def keyPressEvent(self, event):
+		if event.key() in (QtCore.Qt.Key_Return,QtCore.Qt.Key_Enter):
+			self.search_event()
+		
+		super(QtGui.QMainWindow,self).keyPressEvent(event)
+	
 	def resizeEvent(self, *args, **kwargs):
 		self.graphicsView.fitInView(self.scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio)
 		
