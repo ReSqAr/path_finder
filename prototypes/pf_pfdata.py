@@ -73,17 +73,6 @@ class PathFindingData:
 					c_min_cur = max( c_min_cur, sub_min )
 					c_max_cur = min( c_max_cur, sub_max )
 
-			#c_min_orig = sum(edge._graph_edge._opt_gate_path_length for edge in path._edges)
-			#c_max_orig = sum(edge._graph_edge._opt_path_length for edge in path._edges)
-			#if c_min_orig != c_min_cur or c_max_orig != c_max_cur:
-			#	print("c_min_orig,c_max_orig", (c_min_orig,c_max_orig))
-			#	print("c_min_cur,c_max_cur", (c_min_cur,c_max_cur))
-			#	for edge in path._edges:
-			#		print("%s->%s" % (edge.start(),edge.end()))
-			#		est = self._n_hop_dict.length_estimation([edge.start(),edge.end()])
-			#		print("n_hop:", est, "std:", (edge._graph_edge._opt_gate_path_length,edge._graph_edge._opt_path_length))
-			#	assert(False)
-			
 			path.c_min = [c_min_cur] + (c_min[:-1] if len(c_min) == n else c_min)
 			path.c_max = [c_max_cur] + (c_max[:-1] if len(c_max) == n else c_max)
 			return (c_min_cur,c_max_cur)
@@ -180,14 +169,6 @@ class NHopDictionary:
 			self._map_opt_path[key] = opt_path
 			self._map_length[key] = (opt_gate_path.length(),opt_path.length())
 		
-		#print(key, edges[0].start().position, ", ".join(str(e.end().position) for e in edges))
-		
-		#end = edges[-1].end()
-		#print("end:", edges[-1]._graph_edge.edge_id(self.graph),
-		      #"start pos:", edges[-1].start().position,
-		      #"end pos:", end.position,
-		      #"connected edges:", ",".join(str(e.edge_id(self.graph)) for e in end.edges))
-		
 		# iterate over all edges
 		for edge in edges[-1].end().directional_edges():
 			# do not allow loops
@@ -205,8 +186,6 @@ class NHopDictionary:
 			for edge in node.directional_edges():
 				self._build_helper([edge])
 		print("added %d keys" % len(self._map_opt_path))
-		#for key in sorted(self._map_opt_path.keys()):
-			#print(key)
 		
 	def optimal_path(self, edges):
 		""" find the optimal path """
@@ -228,6 +207,4 @@ class NHopDictionary:
 	def length_estimation(self, edges):
 		""" get a length estimation """
 		key = self.create_key(edges)
-		if not key in self._map_length:
-			print("edges: %s" % " ".join(str(edge._graph_edge) for edge in edges))
 		return self._map_length[key]
