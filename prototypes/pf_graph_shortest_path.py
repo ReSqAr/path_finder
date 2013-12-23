@@ -172,6 +172,10 @@ class Path:
 		""" return the end node """
 		return self._edge.end()
 	
+	def last_edge(self):
+		""" find the last edge """
+		return self._edge
+	
 	def get_extended_by(self, edge):
 		""" get a path which es extended by the given edge """
 		return Path(self, edge)

@@ -32,36 +32,48 @@ class ShortestPathSearch:
 		def range_eval(path):
 			c = len(path.edges())
 			
-			# corresponds to nodes
-			if len(path.edges()) > 1:
-				c_min = path.parent().c_min
-				c_max = path.parent().c_max
-			else:
-				c_min,c_max = [],[]
 
-			# c_min, c_max have length min(n, c-1)
-	
-			c_min_cur = 0
-			c_max_cur = float("inf")
+			c_min = 0
+			c_max = float("inf")
+			
+			current = path
+			edges = []
 			
 			# compute a min/max length estimate
-			for i in range(1,min(self.n,len(c_min)+1)+1):
-				# find the min/max lengths from node edge[-i] to edge[-1].end
-				# for 1 <= i <= n and <= c_min+1
-				edges = [path.edges()[k] for k in range(-i,0)] #  -i <= k <= -1
+			for i in range(1,self.n+1):
+				# find the min/max lengths from node edge[-i] to edge[-1].end()
+				# (we have: current.last_edge() == edge[-i]
+				edges.append( current.last_edge() )
 				assert(len(edges) == i)
+				# find the estimated min/max length for the path
 				sub_min,sub_max = self._n_hop_dict.length_estimation(edges)
-				# add them to the min/max path to edge[-i]
-				if i - 1 < len(c_min):
-					c_min_cur = max( c_min_cur, c_min[i-1] + sub_min )
-					c_max_cur = min( c_max_cur, c_max[i-1] + sub_max )
-				else:
-					c_min_cur = max( c_min_cur, sub_min )
-					c_max_cur = min( c_max_cur, sub_max )
+				
+				parent = current.parent()
 
-			path.c_min = [c_min_cur] + (c_min[:-1] if len(c_min) == self.n else c_min)
-			path.c_max = [c_max_cur] + (c_max[:-1] if len(c_max) == self.n else c_max)
-			return (c_min_cur,c_max_cur)
+				# find the estimated length of the parent path
+				if parent is None:
+					c_min_parent = 0
+					c_max_parent = 0
+				else:
+					c_min_parent = parent.c_min
+					c_max_parent = parent.c_max
+					
+				# update c_m??_cur if we current subdivision gives
+				# a better estimate
+				c_min = max( c_min, sub_min + c_min_parent )
+				c_max = min( c_max, sub_max + c_max_parent )
+
+				# advance if possible
+				if parent:
+					current = parent
+				else:
+					break
+					
+				
+			# set c_min/c_max
+			path.c_min = c_min
+			path.c_max = c_max
+			return (c_min,c_max)
 		
 		self.finder = pf_graph_shortest_path.ShortestPathFinder(
 		                          self.graph.nodes,
