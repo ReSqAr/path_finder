@@ -177,7 +177,7 @@ class TestRawMap(unittest.TestCase):
 	"""
 		test pf_raw_map
 	"""
-	raw_map_path = "example.pgm"
+	raw_map_path = "example0.pgm"
 	
 	def test_create(self):
 		""" test if everything works as expected """
@@ -424,7 +424,7 @@ class TestShortestPath(unittest.TestCase):
 		raw_edges = { (0,1), }
 		get_edges = self.get_edges_function(raw_edges)
 		def exact_eval(path):
-			return len(path._edges)
+			return len(path.edges())
 		def range_eval(path):
 			e = exact_eval(path)
 			return (e,e)
@@ -445,7 +445,7 @@ class TestShortestPath(unittest.TestCase):
 		raw_edges = { (0,1),(1,2) }
 		get_edges = self.get_edges_function(raw_edges)
 		def exact_eval(path):
-			return len(path._edges)
+			return len(path.edges())
 		def range_eval(path):
 			e = exact_eval(path)
 			return (e,e)
@@ -483,7 +483,7 @@ class TestShortestPath(unittest.TestCase):
 			elif edge.point_set() == {3,0}:
 				return 1
 		def exact_eval(path):
-			return sum(edge_weight(edge) for edge in path._edges)
+			return sum(edge_weight(edge) for edge in path.edges())
 		def range_eval(path):
 			e = exact_eval(path)
 			return (e,e)

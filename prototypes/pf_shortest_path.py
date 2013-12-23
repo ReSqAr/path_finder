@@ -25,15 +25,15 @@ class ShortestPathSearch:
 		def get_edges(node):
 			return node.directional_edges()
 		def exact_eval(path):
-			path = sum([edge.opt_path().points for edge in path._edges],[])
+			path = sum([edge.opt_path().points for edge in path.edges()],[])
 			path = pf_vector.PathF(path)
 			opt = self.area_map.optimise_path(path)
 			return opt.length()
 		def range_eval(path):
-			c = len(path._edges)
+			c = len(path.edges())
 			
 			# corresponds to nodes
-			if len(path._edges) > 1:
+			if len(path.edges()) > 1:
 				c_min = path._extended_path.c_min
 				c_max = path._extended_path.c_max
 			else:
@@ -48,7 +48,7 @@ class ShortestPathSearch:
 			for i in range(1,min(self.n,len(c_min)+1)+1):
 				# find the min/max lengths from node edge[-i] to edge[-1].end
 				# for 1 <= i <= n and <= c_min+1
-				edges = [path._edges[k] for k in range(-i,0)] #  -i <= k <= -1
+				edges = [path.edges()[k] for k in range(-i,0)] #  -i <= k <= -1
 				assert(len(edges) == i)
 				sub_min,sub_max = self._n_hop_dict.length_estimation(edges)
 				# add them to the min/max path to edge[-i]
@@ -78,7 +78,7 @@ class ShortestPathSearch:
 		path = self.finder.find_path(start,end)
 		
 		# convert it to PathF and maximise (not very optimised version)
-		opt_path = sum([edge.opt_path().points for edge in path._edges],[])
+		opt_path = sum([edge.opt_path().points for edge in path.edges()],[])
 		opt_path = pf_vector.PathF(opt_path)
 		opt_path = self.area_map.optimise_path(opt_path)
 		

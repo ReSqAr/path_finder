@@ -143,7 +143,7 @@ class ShortestPathFinder:
 				if new_node == start:
 					continue
 				# if edge.end() appears somewhere in P, skip the edge
-				for P_edge in P._edges:
+				for P_edge in P.edges():
 					if new_node == P_edge.end():
 						break
 				else:
@@ -177,6 +177,10 @@ class Path:
 		# add a reference to self
 		new_path._extended_path = self
 		return new_path
+	
+	def edges(self):
+		""" get all edges """
+		return self._edges
 	
 	def nodes(self):
 		""" get all nodes """
