@@ -41,8 +41,8 @@ class ShortestPathSearch:
 			
 			# compute a min/max length estimate
 			for i in range(1,self.n+1):
-				# find the min/max lengths from node edge[-i] to edge[-1].end()
-				# (we have: current.last_edge() == edge[-i]
+				# find the min/max lengths from node edge[-i].start() to edge[-1].end()
+				# (we have: current.last_edge() == edge[-i])
 				edges.append( current.last_edge() )
 				assert(len(edges) == i)
 				# find the estimated min/max length for the path

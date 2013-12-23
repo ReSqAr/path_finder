@@ -1,3 +1,5 @@
+import collections
+
 class ShortestPathFinder:
 	"""
 	title:
@@ -91,10 +93,11 @@ class ShortestPathFinder:
 		UpperBound[start] = 0.
 		
 		# keep statistics
-		c_evals,e_evals,N_rejected,considered_paths = 0,0,0,0
+		c_evals = collections.defaultdict(int)
+		e_evals = collections.defaultdict(int)
+		N_rejected = collections.defaultdict(int)
 		
 		while OpenPaths:
-			considered_paths += 1
 			# 1. extract the element with the smallest min c(P)
 			P = min(OpenPaths, key=lambda P:self._range_eval(P)[0])
 			OpenPaths.remove(P)
@@ -104,7 +107,7 @@ class ShortestPathFinder:
 			# 2. if P_opt exists, test the length
 			# compute c(P)
 			min_cP,max_cP = self._range_eval(P)
-			c_evals += 1
+			c_evals[P.length] += 1
 			#print("c(P):", min_cP,max_cP)
 			
 			# if all following paths are longer
@@ -114,7 +117,7 @@ class ShortestPathFinder:
 			
 			# 3. a) skip P if UpperBound[P.end_node] < min c(P)
 			if P.end_node() in UpperBound and UpperBound[P.end_node()] < min_cP:
-				N_rejected += 1
+				N_rejected[P.length] += 1
 				continue
 			
 			# 3. b) update UpperBound[P.end_node] if > max c(P)
@@ -126,7 +129,7 @@ class ShortestPathFinder:
 			# 4. if P.end_node is end, compute e(P) and update P_opt if neccessary
 			if P.end_node() == end:
 				eP = self._exact_eval(P)
-				e_evals += 1
+				e_evals[P.length] += 1
 				if P_opt is None or eP < P_opt_length:
 					P_opt = P
 					P_opt_length = eP
@@ -151,10 +154,14 @@ class ShortestPathFinder:
 					new_P = P.get_extended_by(edge)
 					OpenPaths.append(new_P)
 		
-		print("c_evals:",c_evals,
-		       "e_evals:",e_evals,
-		       "N_rejected:",N_rejected,
-		       "considered_paths:",considered_paths)
+		def f(dd):
+			s = sum(dd.values())
+			d = ",".join("%s:%s" % (k,v) for k,v in sorted(dd.items(),key=lambda kv:kv[0]))
+			return "%s (%s)" % (s,d)
+		
+		print("c_evals:", f(c_evals),
+		       "e_evals:",f(e_evals),
+		       "N_rejected:",f(N_rejected))
 		
 		# if we end up here, we could not exit the algorithm early
 		return P_opt
@@ -167,6 +174,7 @@ class Path:
 	def __init__(self, parent, edge):
 		self._parent = parent
 		self._edge = edge
+		self.length = parent.length + 1 if parent else 1
 	
 	def end_node(self):
 		""" return the end node """
