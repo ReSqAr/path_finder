@@ -84,7 +84,7 @@ class ShortestPathFinder:
 		for edge in self._get_edges(start):
 			# add everything except loops
 			if edge.end() != start:
-				OpenPaths.append( Path( [edge] ) )
+				OpenPaths.append( Path( None, edge ) )
 		
 		# intialise UpperBound:
 		# we can get to start directly
@@ -112,19 +112,19 @@ class ShortestPathFinder:
 				# P_opt is the optimal path
 				break
 			
-			# 3. a) skip P if UpperBound[P.end] < min c(P)
-			if P.end() in UpperBound and UpperBound[P.end()] < min_cP:
+			# 3. a) skip P if UpperBound[P.end_node] < min c(P)
+			if P.end_node() in UpperBound and UpperBound[P.end_node()] < min_cP:
 				N_rejected += 1
 				continue
 			
-			# 3. b) update UpperBound[P.end] if > max c(P)
-			if P.end() not in UpperBound or UpperBound[P.end()] > max_cP:
-				UpperBound[P.end()] = max_cP
+			# 3. b) update UpperBound[P.end_node] if > max c(P)
+			if P.end_node() not in UpperBound or UpperBound[P.end_node()] > max_cP:
+				UpperBound[P.end_node()] = max_cP
 				# TODO: question: are there any gurantees like
 				#       could a reordering prevent certain paths from propagation?
 			
-			# 4. if P.end is end, compute e(P) and update P_opt if neccessary
-			if P.end() == end:
+			# 4. if P.end_node is end, compute e(P) and update P_opt if neccessary
+			if P.end_node() == end:
 				eP = self._exact_eval(P)
 				e_evals += 1
 				if P_opt is None or eP < P_opt_length:
@@ -134,10 +134,10 @@ class ShortestPathFinder:
 				continue
 			
 			# 5. otherwise extend it, but without loops; add the extended paths
-			edges = self._get_edges(P.end())
-			
+			possible_edges = self._get_edges(P.end_node())
+
 			# iterate over the edges
-			for edge in edges:
+			for edge in possible_edges:
 				new_node = edge.end()
 				# skip if edge.end() is P.start()==start
 				if new_node == start:
@@ -164,30 +164,34 @@ class Path:
 	"""
 		represents a collection of edges
 	"""
-	def __init__(self, edges):
-		self._edges = edges
+	def __init__(self, parent, edge):
+		self._parent = parent
+		self._edge = edge
 	
-	def end(self):
+	def end_node(self):
 		""" return the end node """
-		return self._edges[-1].end()
+		return self._edge.end()
 	
 	def get_extended_by(self, edge):
 		""" get a path which es extended by the given edge """
-		new_path = Path(self._edges + [edge])
-		# add a reference to self
-		new_path._extended_path = self
-		return new_path
+		return Path(self, edge)
 	
 	def edges(self):
 		""" get all edges """
-		return self._edges
-	
+		edges = []
+		if self._parent:
+			edges += self._parent.edges()
+		edges.append(self._edge)
+		return edges
+			
 	def nodes(self):
 		""" get all nodes """
-		if self._edges:
-			return [self._edges[0].start()] + [edge.end() for edge in self._edges] 
-		else:
-			return []
+		edges = self.edges()
+		return [edges[0].start()] + [edge.end() for edge in edges] 
+	
+	def parent(self):
+		""" get the parent path """
+		return self._parent
 	
 	def __str__(self):
-		return "Path: %s" % '->'.join("%s" % x for x in self._edges)
+		return "Path: %s" % '->'.join("%s" % x for x in self.edges())

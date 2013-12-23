@@ -34,8 +34,8 @@ class ShortestPathSearch:
 			
 			# corresponds to nodes
 			if len(path.edges()) > 1:
-				c_min = path._extended_path.c_min
-				c_max = path._extended_path.c_max
+				c_min = path.parent().c_min
+				c_max = path.parent().c_max
 			else:
 				c_min,c_max = [],[]
 
