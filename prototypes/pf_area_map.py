@@ -8,7 +8,7 @@ class AreaMap(pf_map_base.MapBase):
 	"""
 		Creates a map where every tile is assigned to either its area_id
 		or self.no_area_id if no area could be found. Furthermore,
-		representatives is dictionary of lists which contain representatives
+		representatives is a dictionary of lists which contain representatives
 		of each area, i.e a random point in the area and edges is a dictionary
 		of lists too, containing the edges which constitute the border of the area
 	"""

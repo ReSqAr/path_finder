@@ -69,10 +69,6 @@ class Graph:
 		# optimise the edge paths
 		self._optimise_edge_paths()
 		
-		#print("    5. optimising gates...")
-		## optimise the gate paths
-		#self._optimise_gate_paths()
-		
 		print("done, found %d nodes and %d edges" % (len(self.nodes),len(self.edges),))
 
 	def _create_graph_nodes(self):
@@ -171,28 +167,9 @@ class Graph:
 			opt_path = self.area_map.optimise_path(path)
 			edge.set_optimal_path(opt_path)
 	
-	#def _optimise_gate_paths(self):
-	#	"""
-	#		optimise all gate paths
-	#	"""
-	#	for edge in self.edges:
-	#		assert( len(edge._node_a_gates) in (0,2) )
-	#		assert( len(edge._node_b_gates) in (0,2) )
-	#		# compute optimal gate path
-	#		opt_gate_path = self._opt_gate_path(edge.node_a.position,
-	#		                                       edge._node_a_gates,
-	#		                                    edge.node_b.position,
-	#		                                       edge._node_b_gates,
-	#		                                    edge._opt_path)
-	#		
-	#		# save it
-	#		edge.set_optimal_gate_path( opt_gate_path )
-
-
-
 class GraphNode:
 	"""
-		Represents node in the graph.
+		Represents a node in the graph.
 	"""
 	def __init__(self, position):
 		self.position = position

@@ -3,7 +3,7 @@ import collections
 class ShortestPathFinder:
 	"""
 	title:
-		full path dependant shortest with path length estimator
+		full path dependant shortest path finder with path length estimator
 	
 	given data:
 		- graph with nodes and eges
@@ -33,7 +33,7 @@ class ShortestPathFinder:
 		- maintain a dictionary UpperBound which holds for every
 		  node the upper bound to get there, i.e.
 		    max_{known path P) max c(P)
-		  (this is just for an optimisation)
+		  (this is just an optimisation)
 		- path P_opt with the minimal known distance e(P_best) to the
 		  end node (if one is known)
 		algorithm:

@@ -42,7 +42,7 @@ class ShortestPathSearch:
 			# compute a min/max length estimate
 			for i in range(1,self.n+1):
 				# find the min/max lengths from node edge[-i].start() to edge[-1].end()
-				# (we have: current.last_edge() == edge[-i])
+				# (we have: current.last_edge() == edge[-i]
 				edges.append( current.last_edge() )
 				assert(len(edges) == i)
 				# find the estimated min/max length for the path
@@ -126,7 +126,8 @@ class NHopDictionary:
 		"""
 			create and canonicalise key,
 			the key is the tuple of the edge ids
-			and the lower end starts direction """
+			and the lower end starts direction
+		"""
 		for edge in edges:
 			assert(isinstance(edge,pf_graph.DirectionalGraphEdge))
 		key = tuple(edge._graph_edge.edge_id(self.graph) for edge in edges)

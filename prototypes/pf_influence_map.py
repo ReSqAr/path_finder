@@ -250,8 +250,8 @@ class InfluenceMap(pf_map_base.MapBase):
 	def nearest_area_grid_point_in_sector(self, base, path_a, path_b):
 		"""
 			Find the nearest (grid) point to the (grid) point base which lies
-			between the GridPaths path_a and path_b. The sector is spanned clock-wise from
-			path_a to path_b.
+			between the GridPaths path_a and path_b. The sector is spanned
+			clock-wise from path_a to path_b.
 			
 			Careful: the left/right means here left or right from the path as seen from
 					the point base, i.e. the left end of the sector is path_a hence we
