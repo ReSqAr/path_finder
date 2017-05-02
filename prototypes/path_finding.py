@@ -94,7 +94,7 @@ class MainWindow(QtGui.QMainWindow):
 			for p in path.points:
 				x = self.scene.addRect(p.x*10-2, p.y*10-2, 4, 4,
 										QtGui.QPen(),
-										QtGui.QBrush("blue"))
+										QtGui.QBrush(QtCore.Qt.blue))
 				objs.append(x)
 		return objs
 	
