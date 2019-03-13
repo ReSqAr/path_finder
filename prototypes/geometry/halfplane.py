@@ -1,6 +1,6 @@
 import sys
 
-import pf_vector
+from geometry import vector
 
 
 class HalfPlane:
@@ -53,7 +53,7 @@ class HalfPlane:
         halfplane_status = [self.contains(p) for p in polygon.points]
 
         # create intersection polygon
-        intersection_polygon = pf_vector.Polygon()
+        intersection_polygon = vector.Polygon()
 
         for i in range(polygon.node_count()):
             if halfplane_status[i]:

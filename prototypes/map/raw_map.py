@@ -1,9 +1,7 @@
-import pf_vector
-import pf_halfplane
-import pf_map_base
+from map import map_base
 
 
-class RawMap(pf_map_base.MapBase):
+class RawMap(map_base.MapBase):
     @staticmethod
     def read(path):
         """ read the map """

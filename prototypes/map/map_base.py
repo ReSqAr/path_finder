@@ -1,7 +1,6 @@
 import math
 
-import pf_vector
-import pf_halfplane
+from geometry import halfplane, vector
 
 
 class MapBase:
@@ -12,9 +11,9 @@ class MapBase:
 
     def contains(self, obj):
         """ does the current map contain the point/tile? """
-        if isinstance(obj, pf_vector.PointTemplate):
+        if isinstance(obj, vector.PointTemplate):
             return 0 <= obj.x <= self.width and 0 <= obj.y <= self.height
-        elif isinstance(obj, pf_vector.GridTile):
+        elif isinstance(obj, vector.GridTile):
             return 0 <= obj.x < self.width and 0 <= obj.y < self.height
         else:
             raise TypeError()
@@ -23,15 +22,15 @@ class MapBase:
         """ returns an iterator over all tiles """
         for x in range(self.width):
             for y in range(self.height):
-                yield pf_vector.GridTile(x, y)
+                yield vector.GridTile(x, y)
 
     def __getitem__(self, i):
-        assert (isinstance(i, pf_vector.GridTile))
+        assert (isinstance(i, vector.GridTile))
         index = i.x + i.y * self.width
         return self.data[index]
 
     def __setitem__(self, i, v):
-        assert (isinstance(i, pf_vector.GridTile))
+        assert (isinstance(i, vector.GridTile))
         index = i.x + i.y * self.width
         self.data[index] = v
 
@@ -39,9 +38,9 @@ class MapBase:
     def find_gridpoints_in_triangle_iterator(a, b, c):
         """ find all grid points in the triangle defined by the three points """
 
-        assert (isinstance(a, pf_vector.PointF))
-        assert (isinstance(b, pf_vector.PointF))
-        assert (isinstance(c, pf_vector.PointF))
+        assert (isinstance(a, vector.PointF))
+        assert (isinstance(b, vector.PointF))
+        assert (isinstance(c, vector.PointF))
 
         # tolerance for the conversion to integer values
         eps = 1e-6
@@ -98,7 +97,7 @@ class MapBase:
 
             # communicate the vector
             for i in range(i1, i2 + 1):
-                yield pf_vector.GridPoint(i, y)
+                yield vector.GridPoint(i, y)
 
             # increase y
             y += 1
@@ -129,7 +128,7 @@ class MapBase:
 
             # communicate the vector
             for i in range(i1, i2 + 1):
-                yield pf_vector.GridPoint(i, y)
+                yield vector.GridPoint(i, y)
 
             # increase y
             y += 1
@@ -137,9 +136,9 @@ class MapBase:
     def find_tiles_in_triangle_iterator(self, a, b, c):
         """ find all tiles in the triangle defined by the three points """
 
-        assert (isinstance(a, pf_vector.PointF))
-        assert (isinstance(b, pf_vector.PointF))
-        assert (isinstance(c, pf_vector.PointF))
+        assert (isinstance(a, vector.PointF))
+        assert (isinstance(b, vector.PointF))
+        assert (isinstance(c, vector.PointF))
 
         # tolerance for the conversion to integer values
         eps = 1e-6
@@ -231,7 +230,7 @@ class MapBase:
 
             # communicate the tile
             for i in range(i_min, i_max):
-                tile = pf_vector.GridTile(i, y)
+                tile = vector.GridTile(i, y)
                 if self.contains(tile):
                     yield tile
 
@@ -241,9 +240,9 @@ class MapBase:
     def find_tiles_in_triangle_iterator_slow(self, base, start, end):
         """ find all tiles in the triangle defined by the three points """
 
-        assert (isinstance(base, pf_vector.PointF))
-        assert (isinstance(start, pf_vector.PointF))
-        assert (isinstance(end, pf_vector.PointF))
+        assert (isinstance(base, vector.PointF))
+        assert (isinstance(start, vector.PointF))
+        assert (isinstance(end, vector.PointF))
 
         #
         # find orientation
@@ -278,9 +277,9 @@ class MapBase:
 
         # the triangle is the intersection of the three half planes
         triangle = [
-            pf_halfplane.HalfPlane(base, v_start_normal),
-            pf_halfplane.HalfPlane(base, v_end_normal),
-            pf_halfplane.HalfPlane(start, v_far_edge_normal),
+            halfplane.HalfPlane(base, v_start_normal),
+            halfplane.HalfPlane(base, v_end_normal),
+            halfplane.HalfPlane(start, v_far_edge_normal),
         ]
 
         def tile_intersects_triangle(tile):
@@ -301,7 +300,7 @@ class MapBase:
         all_tiles = []
 
         # find first tile which intersects the interior of the area
-        p = pf_vector.GridPoint(int(base.x), int(base.y))
+        p = vector.GridPoint(int(base.x), int(base.y))
 
         for tile in p.adjacent_tiles():
             if tile_intersects_triangle(tile):

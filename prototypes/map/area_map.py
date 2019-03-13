@@ -1,11 +1,10 @@
 import collections
 
-import pf_vector
-import pf_map_base
-import pf_halfplane
+from geometry import vector, halfplane
+from map import map_base
 
 
-class AreaMap(pf_map_base.MapBase):
+class AreaMap(map_base.MapBase):
     """
         Creates a map where every tile is assigned to either its area_id
         or self.no_area_id if no area could be found. Furthermore,
@@ -44,45 +43,45 @@ class AreaMap(pf_map_base.MapBase):
         #
         for x in range(width):
             # y = 0 line
-            t = pf_vector.GridTile(x, 0)
+            t = vector.GridTile(x, 0)
             self.__process_tile(area_id, t)
 
             if self.pass_test(self.raw_map[t]):
-                p = pf_vector.GridPoint(x, 0)
-                p_xpp = pf_vector.GridPoint(x + 1, 0)
+                p = vector.GridPoint(x, 0)
+                p_xpp = vector.GridPoint(x + 1, 0)
                 # inner side is to the right
-                self.edges[area_id].append(pf_vector.GridEdge(p, p_xpp))
+                self.edges[area_id].append(vector.GridEdge(p, p_xpp))
 
             # y = max line
-            t = pf_vector.GridTile(x, height - 1)
+            t = vector.GridTile(x, height - 1)
             self.__process_tile(area_id, t)
 
             if self.pass_test(self.raw_map[t]):
-                p = pf_vector.GridPoint(x, height)
-                p_xpp = pf_vector.GridPoint(x + 1, height)
+                p = vector.GridPoint(x, height)
+                p_xpp = vector.GridPoint(x + 1, height)
                 # inner side is to the right
-                self.edges[area_id].append(pf_vector.GridEdge(p_xpp, p))
+                self.edges[area_id].append(vector.GridEdge(p_xpp, p))
 
         for y in range(height):
             # x = 0 line
-            t = pf_vector.GridTile(0, y)
+            t = vector.GridTile(0, y)
             self.__process_tile(area_id, t)
 
             if self.pass_test(self.raw_map[t]):
-                p = pf_vector.GridPoint(0, y, )
-                p_ypp = pf_vector.GridPoint(0, y + 1)
+                p = vector.GridPoint(0, y, )
+                p_ypp = vector.GridPoint(0, y + 1)
                 # inner side is to the left
-                self.edges[area_id].append(pf_vector.GridEdge(p_ypp, p))
+                self.edges[area_id].append(vector.GridEdge(p_ypp, p))
 
             # x = max line
-            t = pf_vector.GridTile(width - 1, y)
+            t = vector.GridTile(width - 1, y)
             self.__process_tile(area_id, t)
 
             if self.pass_test(self.raw_map[t]):
-                p = pf_vector.GridPoint(width, y, )
-                p_ypp = pf_vector.GridPoint(width, y + 1)
+                p = vector.GridPoint(width, y, )
+                p_ypp = vector.GridPoint(width, y + 1)
                 # inner side is to the left
-                self.edges[area_id].append(pf_vector.GridEdge(p, p_ypp))
+                self.edges[area_id].append(vector.GridEdge(p, p_ypp))
 
         # increment area_id
         area_id += 1
@@ -174,9 +173,9 @@ class AreaMap(pf_map_base.MapBase):
             intersects no unpassable tiles. Assuming that no obstruction
             lies on the lines base->start and start->end.
         """
-        assert (isinstance(base, pf_vector.PointF))
-        assert (isinstance(start, pf_vector.PointF))
-        assert (isinstance(end, pf_vector.PointF))
+        assert (isinstance(base, vector.PointF))
+        assert (isinstance(start, vector.PointF))
+        assert (isinstance(end, vector.PointF))
 
         # find the interior of the triangle
         v_start = start - base
@@ -244,8 +243,8 @@ class AreaMap(pf_map_base.MapBase):
             # t value now is the intersection of the start->end line with the
             # halfplane which is defined by base->obstruction point
             v_obstruction_normal = (obstructing_point.toPointF() - base).left()
-            halfplane = pf_halfplane.HalfPlane(base, v_obstruction_normal)
-            t = halfplane.find_t(start, end)
+            hp = halfplane.HalfPlane(base, v_obstruction_normal)
+            t = hp.find_t(start, end)
 
             return t, obstructing_point
 
@@ -256,7 +255,7 @@ class AreaMap(pf_map_base.MapBase):
         path_changed = False
 
         # start new path with the starting point of the old path, truncate old_path
-        path, old_path = pf_vector.PathF(path.points[0:1]), pf_vector.PathF(path.points[1:])
+        path, old_path = vector.PathF(path.points[0:1]), vector.PathF(path.points[1:])
 
         while not old_path.empty():
             # take the last point of the new path
@@ -293,7 +292,7 @@ class AreaMap(pf_map_base.MapBase):
                     #       in the next iteration
                     path.append(obs)
                     pt = p0 + (p1 - p0).scaled(t)
-                    pt = pf_vector.PointF(pt.x, pt.y)
+                    pt = vector.PointF(pt.x, pt.y)
                     if obs != pt:
                         old_path.prepend(pt)
                     path_changed = True
@@ -345,7 +344,7 @@ class AreaMap(pf_map_base.MapBase):
         if t < 0.: t = 0.
         # compute the point p
         p = a + t * (b - a)
-        return pf_vector.PointF(p.x, p.y)
+        return vector.PointF(p.x, p.y)
 
     def optimise_point_to_line(self, point, p0, line_a, line_b):
         """
@@ -353,7 +352,7 @@ class AreaMap(pf_map_base.MapBase):
             when assuming that the line point->p0 is not obstructed, where
             p0 is a point on the line line_a->line_b
         """
-        path = pf_vector.PathF([point, p0])
+        path = vector.PathF([point, p0])
 
         while True:
             # short cuts
@@ -378,7 +377,7 @@ class AreaMap(pf_map_base.MapBase):
                 # compute the point on the line line_p->p
                 # (in particular this is a valid end point)
                 pt = p0 + t * (p - p0)
-                pt = pf_vector.PointF(pt.x, pt.y)
+                pt = vector.PointF(pt.x, pt.y)
 
                 # replace base->p0 by base->obs->pt
                 path.points[-1] = obs.toPointF()
@@ -398,15 +397,15 @@ class AreaMap(pf_map_base.MapBase):
             the high max iteration count is due to convergence issues
             in the projection step.
         """
-        assert (isinstance(start_a, pf_vector.PointF))
-        assert (isinstance(start_b, pf_vector.PointF))
-        assert (isinstance(end_a, pf_vector.PointF))
-        assert (isinstance(end_b, pf_vector.PointF))
+        assert (isinstance(start_a, vector.PointF))
+        assert (isinstance(start_b, vector.PointF))
+        assert (isinstance(end_a, vector.PointF))
+        assert (isinstance(end_b, vector.PointF))
 
         print("optimising path of length %s (nodes: %d)..." % (path.length(), path.node_count()))
 
         # copy path
-        path = pf_vector.PathF(path.points[:])
+        path = vector.PathF(path.points[:])
 
         # to help with convergence, we add additional points to the path:
         # without any obstructions the points which are closest together

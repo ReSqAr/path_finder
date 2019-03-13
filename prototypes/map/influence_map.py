@@ -1,10 +1,10 @@
 import collections
 
-import pf_vector
-import pf_map_base
+from geometry import vector
+from map import map_base
 
 
-class InfluenceMap(pf_map_base.MapBase):
+class InfluenceMap(map_base.MapBase):
     """
 		balloon the boundary area while preserving the homotopy type of the loops
 	"""
@@ -108,8 +108,8 @@ class InfluenceMap(pf_map_base.MapBase):
 
             # create new points by translating the old ones to the left
             new_a, new_b = edge.a + v_left, edge.b + v_left
-            new_a = pf_vector.GridPoint(new_a.x, new_a.y)
-            new_b = pf_vector.GridPoint(new_b.x, new_b.y)
+            new_a = vector.GridPoint(new_a.x, new_a.y)
+            new_b = vector.GridPoint(new_b.x, new_b.y)
 
             # the configuration looks like that:
             # new_a----new_b
@@ -163,7 +163,7 @@ class InfluenceMap(pf_map_base.MapBase):
                     update_loop.delete(-1)
             else:
                 # we have to add the edge a->new_a
-                new_edge = pf_vector.GridEdge(edge.a, new_a)
+                new_edge = vector.GridEdge(edge.a, new_a)
                 update_loop.insert(new_edge)
 
             # delete the current edge
@@ -174,7 +174,7 @@ class InfluenceMap(pf_map_base.MapBase):
                 pass
             else:
                 # we have to add it
-                new_edge = pf_vector.GridEdge(new_a, new_b)
+                new_edge = vector.GridEdge(new_a, new_b)
                 update_loop.insert(new_edge)
 
             if ipp_annihilated:
@@ -185,7 +185,7 @@ class InfluenceMap(pf_map_base.MapBase):
                     update_loop.delete(+1 - 1)
             else:
                 # we have to add the new_b->edge b
-                new_edge = pf_vector.GridEdge(new_b, edge.b)
+                new_edge = vector.GridEdge(new_b, edge.b)
                 update_loop.insert(new_edge)
 
         new_loop = update_loop.get_array()
@@ -195,7 +195,7 @@ class InfluenceMap(pf_map_base.MapBase):
         if not new_loop:
             # create the smallest loop a->b and b->a
             edge = loop[0]
-            inverse_edge = pf_vector.GridEdge(edge.b, edge.a)
+            inverse_edge = vector.GridEdge(edge.b, edge.a)
             new_loop = [edge, inverse_edge]
             return False, new_loop
 
@@ -260,12 +260,12 @@ class InfluenceMap(pf_map_base.MapBase):
 			
 			TODO: code seems to be unstable
 		"""
-        assert (isinstance(base, pf_vector.GridPoint))
-        assert (isinstance(path_a, pf_vector.GridPath))
-        assert (isinstance(path_b, pf_vector.GridPath))
+        assert (isinstance(base, vector.GridPoint))
+        assert (isinstance(path_a, vector.GridPath))
+        assert (isinstance(path_b, vector.GridPath))
 
         # compute the tile to the right of path_a[0]->path_a[1]
-        tile_right = pf_vector.GridEdge(path_a.points[0], path_a.points[1]).right_tile()
+        tile_right = vector.GridEdge(path_a.points[0], path_a.points[1]).right_tile()
         # determine the area id of the right tile
         if self.contains(tile_right):
             area_id = self[tile_right]
@@ -278,7 +278,7 @@ class InfluenceMap(pf_map_base.MapBase):
         off_limit_points_a = set()
         for p1, p0 in zip(path_a.points[1:], path_a.points[:-1]):
             # compute the tile to the left of p0->p1
-            tile_left = pf_vector.GridEdge(p0, p1).left_tile()
+            tile_left = vector.GridEdge(p0, p1).left_tile()
             # the points left to path_a are off limit
             off_limit_points_a |= set(tile_left.adjacent_points())
         # the points on the line are fine
@@ -288,7 +288,7 @@ class InfluenceMap(pf_map_base.MapBase):
         off_limit_points_b = set()
         for p1, p0 in zip(path_b.points[1:], path_b.points[:-1]):
             # compute the tile to the right of p0->p1
-            tile_right = pf_vector.GridEdge(p0, p1).right_tile()
+            tile_right = vector.GridEdge(p0, p1).right_tile()
             # the points right to path_b are off limit
             off_limit_points_b |= set(tile_right.adjacent_points())
         # the points on the line are fine

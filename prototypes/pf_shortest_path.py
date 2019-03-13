@@ -1,6 +1,5 @@
-import pf_vector
-import pf_graph
-import pf_graph_shortest_path
+from geometry import vector
+from graph import shortest_path, graph
 
 
 class ShortestPathSearch:
@@ -27,7 +26,7 @@ class ShortestPathSearch:
 
         def exact_eval(path):
             path = sum([edge.opt_path().points for edge in path.edges()], [])
-            path = pf_vector.PathF(path)
+            path = vector.PathF(path)
             opt = self.area_map.optimise_path(path)
             return opt.length()
 
@@ -75,7 +74,7 @@ class ShortestPathSearch:
             path.c_max = c_max
             return (c_min, c_max)
 
-        self.finder = pf_graph_shortest_path.ShortestPathFinder(
+        self.finder = shortest_path.ShortestPathFinder(
             self.graph.nodes,
             get_edges,
             exact_eval,
@@ -83,15 +82,15 @@ class ShortestPathSearch:
 
     def find_path_between_nodes(self, start, end):
         """ find the best path between the two points """
-        assert (isinstance(start, pf_graph.GraphNode))
-        assert (isinstance(end, pf_graph.GraphNode))
+        assert (isinstance(start, graph.GraphNode))
+        assert (isinstance(end, graph.GraphNode))
 
         # find the shortest path
         path = self.finder.find_path(start, end)
 
         # convert it to PathF and maximise (not very optimised version)
         opt_path = sum([edge.opt_path().points for edge in path.edges()], [])
-        opt_path = pf_vector.PathF(opt_path)
+        opt_path = vector.PathF(opt_path)
         opt_path = self.area_map.optimise_path(opt_path)
 
         # and return it
@@ -99,8 +98,8 @@ class ShortestPathSearch:
 
     def find_path(self, start, end):
         """ find the best path between the two points """
-        assert (isinstance(start, pf_vector.PointF))
-        assert (isinstance(end, pf_vector.PointF))
+        assert (isinstance(start, vector.PointF))
+        assert (isinstance(end, vector.PointF))
 
         raise NotImplementedError
 
@@ -130,7 +129,7 @@ class NHopDictionary:
 			and the lower end starts direction
 		"""
         for edge in edges:
-            assert (isinstance(edge, pf_graph.DirectionalGraphEdge))
+            assert (isinstance(edge, graph.DirectionalGraphEdge))
         key = tuple(edge._graph_edge.edge_id(self.graph) for edge in edges)
         return key if key[0] <= key[-1] else tuple(reversed(key))
 
@@ -167,7 +166,7 @@ class NHopDictionary:
         if len(edges) != 1:
             old_opt_path = self.optimal_path(edges[:-1])
         else:
-            old_opt_path = pf_vector.PathF([])
+            old_opt_path = vector.PathF([])
 
         # create the key under which we can find the data
         key = self.create_key(edges)
@@ -176,7 +175,7 @@ class NHopDictionary:
         if key not in self._map_opt_path:
             # create an extended path along the new node
             not_opt_path = old_opt_path.points + edges[-1].opt_path().points
-            not_opt_path = pf_vector.PathF(not_opt_path)
+            not_opt_path = vector.PathF(not_opt_path)
             # find optimal path
             if len(edges) > 1:
                 opt_path = self.area_map.optimise_path(not_opt_path)

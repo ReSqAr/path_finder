@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 import sys
 
-import math
 import time
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4 import uic
 
-import pf_raw_map
-import pf_pfdata
+from map import raw_map
+import pf_data
 
 import pf_shortest_path
 
@@ -22,10 +21,10 @@ class MainWindow(QtGui.QMainWindow):
         super(QtGui.QMainWindow, self).__init__()
 
         self.raw_map_path = map_path
-        self.raw_map = pf_raw_map.RawMap.read(self.raw_map_path)
+        self.raw_map = raw_map.RawMap.read(self.raw_map_path)
 
         self.preprocessed = \
-            pf_pfdata.PathFindingData(self.raw_map, lambda x: x == 255)  # default 255
+            pf_data.PathFindingData(self.raw_map, lambda x: x == 255)  # default 255
 
         # init gui
         self.initUI()

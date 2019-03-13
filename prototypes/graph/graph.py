@@ -1,6 +1,6 @@
 import collections
 
-import pf_vector
+from geometry import vector
 
 
 class Graph:
@@ -115,7 +115,7 @@ class Graph:
             # apply a search of all paths which originate at the current position.
             # to do that, extend the path with all possibilites until we find
             # another node
-            paths_to_explore = [pf_vector.GridPath([start_node.position])]
+            paths_to_explore = [vector.GridPath([start_node.position])]
 
             # extend the path
             while paths_to_explore:

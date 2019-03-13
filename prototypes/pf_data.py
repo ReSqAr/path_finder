@@ -1,6 +1,5 @@
-import pf_area_map
-import pf_influence_map
-import pf_graph
+from map import area_map, influence_map
+from graph import graph
 import pf_shortest_path
 
 
@@ -18,11 +17,11 @@ class PathFindingData:
 		
 	def _preprocess_map(self):
 		# create the area map
-		self.area_map = pf_area_map.AreaMap(self.raw_map, self.pass_test)
+		self.area_map = area_map.AreaMap(self.raw_map, self.pass_test)
 		# create the influence map
-		self.influence_map = pf_influence_map.InfluenceMap(self.area_map)
+		self.influence_map = influence_map.InfluenceMap(self.area_map)
 		# create the graph
-		self.graph = pf_graph.Graph(self.area_map, self.influence_map)
+		self.graph = graph.Graph(self.area_map, self.influence_map)
 		# create shortest path search
 		self.shortest_path = pf_shortest_path.ShortestPathSearch(self.graph, self.area_map, self.precomputed_hops)
 	
